@@ -204,6 +204,45 @@ async function changeAdminPw(){
   await db.collection('admins').doc(S.uid).update({password:nw});
   toast('Password changed! ✅');$('curPw').value='';$('newPw').value=''}
 
+// Sub-Admin management
+async function loadSubAdmins(){
+  const el=$('subAdminList');if(!el)return;
+  const snap=await db.collection('admins').get();
+  const admins=snap.docs.map(d=>({id:d.id,...d.data()})).filter(a=>a.id!==S.uid);
+  if(!admins.length){el.innerHTML='<div class="empty"><p>No sub-admins yet</p></div>';return}
+  let h='';admins.forEach((a,i)=>{
+    h+=`<div class="list-item"><div class="avatar ${avColor(i)}">${(a.name||'A')[0]}</div>
+    <div class="flex-1"><div class="h3">${a.name} <span class="tag ${a.role==='superadmin'?'tag-org':'tag-pur'}">${a.role==='superadmin'?'Super':'Sub'}</span></div>
+    <div class="sub2">@${a.username} · <span class="pw-tag">${a.password}</span></div></div>
+    ${a.role!=='superadmin'?'<button class="btn-icon" style="background:var(--red)" onclick="delSubAdmin(\''+a.id+'\')">🗑</button>':''}</div>`});
+  el.innerHTML=h}
+
+function showAddSubAdmin(){
+  app.innerHTML=`<button class="back" onclick="S.tab='settings';rAdmin()">← ${t('back')}</button>
+  <div class="panel"><div class="panel-title">➕ Add Sub-Admin</div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>Sub-admins can manage teachers, students, classrooms but cannot create other admins.</div></div>
+  <div class="fld"><label class="lbl">${t('fullName')}</label><input class="inp" id="saN"></div>
+  <div class="fld"><label class="lbl">${t('username')}</label><input class="inp" id="saU" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9]/g,'')"></div>
+  <div class="fld"><label class="lbl">${t('password')}</label><input class="inp" id="saP"></div>
+  <button class="btn btn-p btn-w" onclick="addSubAdmin()">✅ ${t('create')}</button></div>`}
+
+async function addSubAdmin(){
+  const n=$('saN').value.trim(),u=$('saU').value.trim(),p=$('saP').value.trim();
+  if(!n||!u||!p)return toast(t('fillAll'),'err');if(p.length<4)return toast('Min 4','err');
+  if(!(await db.collection('admins').where('username','==',u).get()).empty)return toast('Username taken','err');
+  const rk=Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+  await db.collection('admins').add({name:n,username:u,password:p,role:'subadmin',recoveryKey:rk,createdAt:Date.now()});
+  toast(t('created'));
+  app.innerHTML=`<button class="back" onclick="S.tab='settings';rAdmin()">← ${t('back')}</button>
+  <div class="panel" style="border:2px solid var(--warn)"><div class="panel-title" style="color:var(--warn)">⚠️ Save Recovery Key</div>
+  <p style="font-size:13px;color:var(--txt2);margin-bottom:12px">Give this to the sub-admin:</p>
+  <div style="background:var(--bg);padding:16px;border-radius:12px;text-align:center">
+  <div style="font-size:20px;font-weight:900;letter-spacing:3px;color:var(--saf);font-family:monospace">${rk}</div></div>
+  <div style="font-size:12px;color:var(--txt3);text-align:center;margin-top:8px">Username: <b>${u}</b> · Password: <b>${p}</b></div></div>
+  <button class="btn btn-p btn-w" onclick="S.tab='settings';rAdmin()">✅ Done</button>`}
+
+async function delSubAdmin(id){if(!confirm('Delete?'))return;await db.collection('admins').doc(id).delete();toast(t('deleted'));loadSubAdmins()}
+
 // First-time Super Admin Setup
 function showAdminSetup(){hideNav();
   app.innerHTML=`<div style="text-align:center;padding:20px 0"><div style="font-size:48px">🛡️</div><div class="h1" style="margin-top:12px">Create Super Admin</div>

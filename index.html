@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B0B1A">
+<title>ਪੰਜਾਬੀ ਸਿੱਖੋ</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app" id="app"><div class="loading"><div class="loader"></div><p>Loading ਪੰਜਾਬੀ ਸਿੱਖੋ...</p></div></div>
+<div class="bnav" id="bnav"><div class="bnav-inner" id="bnavInner"></div></div>
+
+<script>
+if(typeof firebase==='undefined'){document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">⚠️</div><h2 style="color:#F8FAFC;margin:12px 0">Push to GitHub Pages</h2></div>';throw new Error('No Firebase')}
+</script>
+<script src="js/app.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/teacher.js"></script>
+<script src="js/student.js"></script>
+</body>
+</html>

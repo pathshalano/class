@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B0B1A">
+<title>ਪੰਜਾਬੀ ਸਿੱਖੋ</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0B0B1A;--bg2:#12122A;--card:#1A1A36;--card2:#222248;--card3:#2A2A52;
+  --saf:#F5A623;--grn:#2ECC71;--red:#E74C3C;--blu:#3B82F6;--pur:#8B5CF6;--cyan:#06B6D4;--pink:#EC4899;--warn:#F59E0B;
+  --txt:#F8FAFC;--txt2:#CBD5E1;--txt3:#64748B;--brd:#2D2D5A;
+  --r:16px;--r2:12px;--r3:20px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:'Inter',sans-serif;cursor:pointer}input,textarea,select{font-family:'Inter',sans-serif}
+
+/* Container */
+.app{max-width:480px;margin:0 auto;padding:16px;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(90px,calc(70px + env(safe-area-inset-bottom)))}
+
+/* Typography */
+.h1{font-size:22px;font-weight:800;letter-spacing:-0.3px}
+.h2{font-size:18px;font-weight:700;letter-spacing:-0.2px}
+.h3{font-size:15px;font-weight:700}
+.sub{font-size:12px;color:var(--txt3);font-weight:500}
+.sub2{font-size:11px;color:var(--txt3)}
+
+/* Header bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-avatar{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--pur),var(--blu));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0}
+.topbar-avatar img{width:100%;height:100%;border-radius:14px;object-fit:cover}
+.topbar-info .name{font-size:16px;font-weight:700}
+.topbar-info .greeting{font-size:12px;color:var(--txt3)}
+.topbar-actions{display:flex;gap:8px}
+
+/* Buttons */
+.btn{padding:12px 24px;border:none;border-radius:var(--r2);font-weight:700;font-size:14px;transition:all .15s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--saf);color:#0B0B1A}
+.btn-s{background:var(--card2);color:var(--txt)}
+.btn-d{background:var(--red);color:#fff}
+.btn-g{background:var(--grn);color:#fff}
+.btn-w{width:100%}
+.btn-sm{padding:8px 14px;font-size:12px;border-radius:10px}
+.btn:disabled{opacity:.35;pointer-events:none}
+.btn-icon{width:40px;height:40px;border-radius:12px;border:none;background:var(--card2);color:var(--txt);font-size:18px;display:flex;align-items:center;justify-content:center}
+.btn-icon:active{transform:scale(.9)}
+
+/* Inputs */
+.inp{width:100%;padding:14px 16px;background:var(--card);border:1.5px solid var(--brd);border-radius:var(--r2);color:var(--txt);font-size:14px;font-weight:500;transition:border .2s}
+.inp:focus{outline:none;border-color:var(--saf)}
+.inp::placeholder{color:var(--txt3)}
+.lbl{font-size:11px;font-weight:600;color:var(--txt3);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:0.8px}
+.fld{margin-bottom:14px}
+.field-hint{font-size:10px;color:var(--txt3);margin-top:4px;font-style:italic}
+
+/* Dashboard Grid Cards */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.dash-card{border-radius:var(--r3);padding:18px 16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;min-height:110px;display:flex;flex-direction:column;justify-content:space-between}
+.dash-card:active{transform:scale(.97)}
+.dash-card .dc-icon{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px}
+.dash-card .dc-title{font-size:14px;font-weight:700;color:#fff}
+.dash-card .dc-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px}
+.dash-card.dc-green{background:linear-gradient(135deg,#2ECC71,#27AE60)}
+.dash-card.dc-blue{background:linear-gradient(135deg,#3B82F6,#2563EB)}
+.dash-card.dc-purple{background:linear-gradient(135deg,#8B5CF6,#7C3AED)}
+.dash-card.dc-orange{background:linear-gradient(135deg,#F59E0B,#D97706)}
+.dash-card.dc-pink{background:linear-gradient(135deg,#EC4899,#DB2777)}
+.dash-card.dc-cyan{background:linear-gradient(135deg,#06B6D4,#0891B2)}
+.dash-card.dc-red{background:linear-gradient(135deg,#EF4444,#DC2626)}
+.dash-card.dc-wide{grid-column:span 2}
+
+/* Panel / Card */
+.panel{background:var(--card);border-radius:var(--r3);padding:18px;margin-bottom:14px}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.panel-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+
+/* Section title */
+.sec-title{font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+
+/* List items */
+.list-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--brd)}
+.list-item:last-child{border-bottom:none}
+.list-item.clickable{cursor:pointer}
+.list-item.clickable:active{opacity:.7}
+
+/* Avatars */
+.avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0}
+.avatar-sm{width:32px;height:32px;border-radius:10px;font-size:13px}
+.av-pur{background:linear-gradient(135deg,#8B5CF6,#7C3AED)}
+.av-blu{background:linear-gradient(135deg,#3B82F6,#2563EB)}
+.av-grn{background:linear-gradient(135deg,#2ECC71,#27AE60)}
+.av-org{background:linear-gradient(135deg,#F59E0B,#D97706)}
+.av-pink{background:linear-gradient(135deg,#EC4899,#DB2777)}
+.av-cyan{background:linear-gradient(135deg,#06B6D4,#0891B2)}
+.av-colors{background:linear-gradient(135deg,#8B5CF6,#EC4899)}
+
+/* Category circles */
+.cat-circle{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+
+/* Chips / Filter tabs */
+.chip-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px;scrollbar-width:none}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;border:none;background:var(--card2);color:var(--txt3);cursor:pointer;white-space:nowrap;transition:all .15s}
+.chip.on{background:var(--saf);color:#0B0B1A}
+
+/* Card grid (flashcards) */
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.flash-card{background:var(--card2);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .15s}
+.flash-card:active{transform:scale(.97)}
+.flash-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.flash-card .fc-label{padding:10px;text-align:center}
+.flash-card .fc-gur{font-size:20px;font-weight:800}
+.flash-card .fc-eng{font-size:11px;color:var(--txt3);margin-top:2px}
+
+/* Flashcard viewer */
+.viewer{background:var(--card);border-radius:var(--r3);overflow:hidden;margin-bottom:14px}
+.viewer-img{width:100%;height:220px;object-fit:cover;display:block;background:var(--card2)}
+.viewer-body{padding:20px;text-align:center}
+.viewer-gur{font-size:36px;font-weight:900;letter-spacing:-0.5px}
+.viewer-eng{font-size:15px;color:var(--txt3);margin-top:4px}
+.viewer-blur{filter:blur(24px);user-select:none}
+
+/* Audio button */
+.audio-btn{width:60px;height:60px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--saf),#F97316);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 4px 20px rgba(245,166,35,.3)}
+.audio-btn:active{transform:scale(.92)}
+
+/* Quiz grid */
+.quiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.quiz-opt{border-radius:var(--r);overflow:hidden;border:3px solid var(--brd);cursor:pointer;transition:all .2s;aspect-ratio:1}
+.quiz-opt:active{transform:scale(.96)}
+.quiz-opt.ok{border-color:var(--grn);box-shadow:0 0 24px rgba(46,204,113,.3)}
+.quiz-opt.no{border-color:var(--red);box-shadow:0 0 24px rgba(231,76,60,.3)}
+.quiz-opt img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Flash overlay */
+.flash-ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;animation:fo .5s ease-out forwards;pointer-events:none}
+.flash-ov.ok{background:rgba(46,204,113,.2)}.flash-ov.no{background:rgba(231,76,60,.2)}
+.flash-ov span{font-size:72px;animation:fp .3s ease-out}
+@keyframes fo{to{opacity:0}}@keyframes fp{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+/* Messages */
+.msg-list{max-height:380px;overflow-y:auto;padding:4px 0}
+.msg-bub{max-width:82%;padding:12px 16px;border-radius:18px;margin-bottom:8px;font-size:13px;line-height:1.5}
+.msg-sent{background:var(--saf);color:#0B0B1A;margin-left:auto;border-bottom-right-radius:4px}
+.msg-recv{background:var(--card2);color:var(--txt);margin-right:auto;border-bottom-left-radius:4px}
+.msg-time{font-size:10px;opacity:.5;margin-top:4px}.msg-name{font-size:10px;font-weight:700;color:var(--saf);margin-bottom:2px}
+.msg-compose{display:flex;gap:8px;margin-top:14px}
+
+/* Badges */
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.badge{background:var(--card2);border-radius:var(--r2);padding:12px 6px;text-align:center;opacity:.3}
+.badge.earned{opacity:1;border:1.5px solid var(--saf)}
+.badge .b-ico{font-size:28px}.badge .b-name{font-size:9px;font-weight:600;margin-top:4px;color:var(--txt3)}
+.badge.earned .b-name{color:var(--txt)}
+
+/* XP Bar */
+.xp-bar{background:var(--card);border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
+.xp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.xp-level{font-size:13px;font-weight:800;color:var(--saf)}.xp-pts{font-size:11px;color:var(--txt3)}
+.xp-track{height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--saf),var(--pur));border-radius:3px;transition:width .5s}
+
+/* Streak */
+.streak{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:var(--r);padding:12px 16px;margin-bottom:14px}
+.streak-num{font-size:22px;font-weight:900;color:var(--saf)}.streak-lbl{font-size:11px;color:var(--txt3)}
+
+/* Score bar */
+.score-bar{display:flex;gap:10px;margin-bottom:14px}
+.score-card{flex:1;background:var(--card);border-radius:var(--r2);padding:12px;text-align:center}
+.score-val{font-size:20px;font-weight:800}.score-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;margin-top:2px}
+
+/* Attendance */
+.att-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--brd)}
+.att-row:last-child{border-bottom:none}
+.att-name{flex:1;font-size:14px;font-weight:600}
+.att-btn{width:56px;height:38px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s}
+.att-btn:active{transform:scale(.88)}
+.att-btn.present{background:var(--grn);color:#fff}.att-btn.absent{background:var(--red);color:#fff}.att-btn.unmarked{background:var(--card2);color:var(--txt3)}
+.att-stat-bar{height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
+.att-fill{height:100%;border-radius:3px;transition:width .3s}
+.att-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.att-day{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.att-day.p{background:rgba(46,204,113,.2);color:var(--grn)}.att-day.a{background:rgba(231,76,60,.2);color:var(--red)}.att-day.e{background:var(--card2);color:var(--txt3)}
+
+/* Tags */
+.tag{display:inline-block;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700}
+.tag-pur{background:rgba(139,92,246,.2);color:var(--pur)}
+.tag-grn{background:rgba(46,204,113,.2);color:var(--grn)}
+.tag-org{background:rgba(245,158,11,.2);color:var(--warn)}
+.tag-red{background:rgba(231,76,60,.2);color:var(--red)}
+.pw-tag{font-family:'JetBrains Mono',monospace;background:var(--card2);padding:2px 8px;border-radius:6px;font-size:11px;color:var(--saf)}
+
+/* Help tip */
+.help-tip{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:var(--r2);padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--blu);line-height:1.6;display:flex;gap:8px}
+.help-tip .h-ico{font-size:16px;flex-shrink:0}
+
+/* Birthday */
+.bday{background:linear-gradient(135deg,rgba(236,72,153,.1),rgba(245,158,11,.1));border:1px solid rgba(245,158,11,.3);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.bday h4{font-size:14px;color:var(--warn);margin-bottom:6px}
+.bday-item{font-size:12px;padding:3px 0;display:flex;align-items:center;gap:6px}
+
+/* Welcome */
+.welcome{background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(139,92,246,.1));border:1px solid rgba(59,130,246,.2);border-radius:var(--r);padding:14px;margin-bottom:14px;font-size:13px;line-height:1.5}
+
+/* Word of Day */
+.wod-card{background:linear-gradient(135deg,rgba(245,166,35,.08),rgba(139,92,246,.08));border:1.5px solid rgba(245,166,35,.25);border-radius:var(--r3);padding:20px;margin-bottom:14px;text-align:center;cursor:pointer}
+.wod-card .wod-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--saf);font-weight:700;margin-bottom:8px}
+.wod-card .wod-gur{font-size:38px;font-weight:900}.wod-card .wod-eng{font-size:14px;color:var(--txt3);margin-top:4px}
+.wod-card .wod-img{width:120px;height:120px;border-radius:16px;object-fit:cover;margin:12px auto;display:block;border:2px solid rgba(245,166,35,.3)}
+
+/* Game buttons */
+.game-btn{border:none;border-radius:var(--r);padding:16px 20px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;margin-bottom:10px;color:#fff;transition:all .15s}
+.game-btn:active{transform:scale(.97)}
+.game-btn .g-sub{font-size:11px;opacity:.7;margin-left:auto}
+
+/* Back button */
+.back{background:none;border:none;color:var(--txt3);font-size:14px;font-weight:600;padding:8px 0;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.back:hover{color:var(--txt)}
+
+/* Bottom Nav */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--brd);padding:8px 0;padding-bottom:max(8px,env(safe-area-inset-bottom));z-index:50;display:none}
+.bnav-inner{max-width:480px;margin:0 auto;display:flex;justify-content:space-around}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 12px;border:none;background:none;color:var(--txt3);font-size:10px;font-weight:600;cursor:pointer;position:relative}
+.bnav-item.on{color:var(--saf)}
+.bnav-item .ni{font-size:22px}
+.bnav-badge{position:absolute;top:-2px;right:2px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* Search */
+.search-bar{position:relative;margin-bottom:14px}
+.search-bar input{width:100%;padding:12px 16px 12px 42px;background:var(--card);border:1.5px solid var(--brd);border-radius:var(--r2);color:var(--txt);font-size:14px}
+.search-bar input:focus{outline:none;border-color:var(--saf)}
+.search-bar .s-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--txt3)}
+
+/* Confetti */
+.confetti-box{position:fixed;inset:0;pointer-events:none;z-index:300;overflow:hidden}
+.confetti-p{position:absolute;width:10px;height:10px;top:-10px;animation:cfall 3s ease-out forwards}
+@keyframes cfall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+
+/* Lang select */
+.lang-sel{background:var(--card2);border:1px solid var(--brd);border-radius:10px;color:var(--txt);padding:6px 10px;font-size:11px;font-weight:600}
+
+/* Loading */
+.loader{display:inline-block;width:24px;height:24px;border:3px solid var(--brd);border-top-color:var(--saf);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px}
+.loading p{color:var(--txt3);font-size:13px}
+
+/* Empty state */
+.empty{text-align:center;padding:32px 20px;color:var(--txt3)}
+.empty .e-ico{font-size:40px;margin-bottom:8px}
+
+/* Toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:12px 28px;border-radius:14px;font-size:13px;font-weight:700;z-index:200;animation:toastin .3s ease-out;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.toast-ok{background:var(--grn);color:#fff}.toast-err{background:var(--red);color:#fff}
+@keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Extra images */
+.extra-imgs{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.extra-imgs img{width:70px;height:70px;border-radius:10px;object-fit:cover;border:2px solid rgba(245,166,35,.3)}
+
+/* Utilities */
+.flex{display:flex}.gap-8{gap:8px}.gap-12{gap:12px}.items-center{align-items:center}.justify-between{justify-content:space-between}.flex-1{flex:1}.text-center{text-align:center}
+.mb-8{margin-bottom:8px}.mb-14{margin-bottom:14px}.mt-14{margin-top:14px}
+</style>
+</head>
+<body>
+<div class="app" id="app"><div class="loading"><div class="loader"></div><p>Loading ਪੰਜਾਬੀ ਸਿੱਖੋ...</p></div></div>
+<div class="bnav" id="bnav"><div class="bnav-inner" id="bnavInner"></div></div>
+<script>
+if(typeof firebase==='undefined'){document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">⚠️</div><h2 style="color:#F8FAFC;margin:12px 0">Push to GitHub Pages</h2></div>';throw new Error('No Firebase')}
+
+// ============ CONFIG ============
+const FBC={apiKey:"AIzaSyAonCmVIp_vhP5vbRDjP7Nlx5PB8piwubE",authDomain:"pathshala-28752.firebaseapp.com",projectId:"pathshala-28752",storageBucket:"pathshala-28752.firebasestorage.app",messagingSenderId:"238955568068",appId:"1:238955568068:web:c89ebe8983c9888874a291"};
+const ADMIN_PW="admin123";
+firebase.initializeApp(FBC);const db=firebase.firestore();
+const $=id=>document.getElementById(id),app=$('app'),bnav=$('bnav');
+
+// Translations (compact)
+const L={en:{login:'Login',logout:'Logout',back:'Back',save:'Save',delete:'Delete',edit:'Edit',create:'Create',add:'Add',send:'Send',name:'Name',username:'Username',password:'Password',admin:'Admin',teacher:'Teacher',student:'Student',teachers:'Teachers',students:'Students',messages:'Messages',settings:'Settings',categories:'Categories',cards:'Cards',classrooms:'Classrooms',classroom:'Classroom',quizGroups:'Quiz Groups',wordOfDay:'Word of the Day',practice:'Practice',quiz:'Quiz',games:'Games',badges:'Badges',attendance:'Attendance',fullName:'Full Name',phone:'Phone',dob:'Date of Birth',email:'Email',contact:'Contact',gurmukhi:'Gurmukhi',english:'English',picture:'Picture',audio:'Audio',shared:'Shared',all:'All',quizzes:'Quizzes',accuracy:'Accuracy',streak:'Streak',home:'Home',retry:'Retry',reveal:'Reveal',next:'Next',prev:'Prev',saving:'Saving...',saved:'Saved!',deleted:'Deleted',created:'Created!',sent:'Sent!',broadcast:'Broadcast',sendToAll:'Send to All',noMessages:'No messages yet',noContent:'No content yet',noStudents:'No students yet',noCards:'No cards yet',fillAll:'Fill all fields',wrongPassword:'Wrong password',notFound:'Not found',selectClassroom:'Select Classroom',reassign:'Reassign',changeTeacher:'Change Teacher',changeClassroom:'Change Classroom',birthday:'Birthday',todayBirthdays:'Birthdays Today!',upcomingBirthdays:'Upcoming Birthdays',speedRound:'Speed Round',randomWord:'Random Word',listenTap:'Listen & tap correct picture',tapMeWod:'Tap to hear today\'s word!',account:'Account',resetPassword:'Reset Password',language:'Language',level:'Level',days:'days',overview:'Overview',profile:'Profile',
+helpCard:'Create a flashcard with Gurmukhi word, English translation, picture and audio. Add 1-2 example pictures too.',helpCat:'Categories organize cards into groups. Create a category first, then add cards.',helpStudent:'Create student login. They use username/password to access the app.',helpTeacher:'Create teacher account. Assign to classrooms and share credentials.',helpClassroom:'Classrooms group students and teachers. Create classrooms first.',helpAtt:'Quick: Tap All Present then tap absent students. Save — done in seconds!',helpAttAdmin:'View attendance by classroom and student with monthly stats.',helpMsg:'Send messages to students individually or broadcast to all.',helpWod:'Pick a card for students to see on their home screen today.',helpQuiz:'Create quiz group with 4 cards. Students hear audio and pick matching picture.',helpGames:'Fun vocabulary games. Speed Round tests speed, Random Word challenges you to guess.',helpPractice:'Pick a category to practice. See picture, guess word, reveal answer and hear audio.'},
+pa:{login:'ਲੌਗਇਨ',logout:'ਲੌਗਆਊਟ',back:'ਪਿੱਛੇ',save:'ਸੇਵ',delete:'ਮਿਟਾਓ',edit:'ਸੋਧੋ',create:'ਬਣਾਓ',add:'ਜੋੜੋ',send:'ਭੇਜੋ',name:'ਨਾਮ',username:'ਯੂਜ਼ਰਨੇਮ',password:'ਪਾਸਵਰਡ',admin:'ਐਡਮਿਨ',teacher:'ਅਧਿਆਪਕ',student:'ਵਿਦਿਆਰਥੀ',teachers:'ਅਧਿਆਪਕ',students:'ਵਿਦਿਆਰਥੀ',messages:'ਸੁਨੇਹੇ',settings:'ਸੈਟਿੰਗਾਂ',categories:'ਸ਼੍ਰੇਣੀਆਂ',cards:'ਕਾਰਡ',classrooms:'ਕਲਾਸਰੂਮ',classroom:'ਕਲਾਸਰੂਮ',practice:'ਅਭਿਆਸ',quiz:'ਕਵਿਜ਼',games:'ਖੇਡਾਂ',badges:'ਬੈਜ',attendance:'ਹਾਜ਼ਰੀ',fullName:'ਪੂਰਾ ਨਾਮ',phone:'ਫ਼ੋਨ',dob:'ਜਨਮ ਮਿਤੀ',home:'ਘਰ',all:'ਸਭ',birthday:'ਜਨਮਦਿਨ',overview:'ਸੰਖੇਪ',profile:'ਪ੍ਰੋਫਾਈਲ',language:'ਭਾਸ਼ਾ',
+helpCard:'ਗੁਰਮੁਖੀ ਸ਼ਬਦ, ਅੰਗਰੇਜ਼ੀ, ਤਸਵੀਰ ਅਤੇ ਆਡੀਓ ਨਾਲ ਕਾਰਡ ਬਣਾਓ।',helpCat:'ਸ਼੍ਰੇਣੀਆਂ ਕਾਰਡ ਗਰੁੱਪ ਕਰਦੀਆਂ ਹਨ।',helpAtt:'ਤੇਜ਼: ਸਭ ਹਾਜ਼ਰ ਟੈਪ ਕਰੋ ਫਿਰ ਗੈਰ-ਹਾਜ਼ਰ ਟੈਪ ਕਰੋ।'},
+hi:{login:'लॉगिन',logout:'लॉगआउट',back:'वापस',save:'सेव',home:'होम',all:'सभी',birthday:'जन्मदिन',overview:'अवलोकन',language:'भाषा'},
+no:{login:'Logg inn',logout:'Logg ut',back:'Tilbake',save:'Lagre',home:'Hjem',all:'Alle',birthday:'Bursdag',overview:'Oversikt',language:'Språk'}};
+let lang=localStorage.getItem('lang')||'en';
+function t(k){return(L[lang]&&L[lang][k])||L.en[k]||k}
+function setLang(l){lang=l;localStorage.setItem('lang',l);R()}
+function langSel(){return`<select class="lang-sel" onchange="setLang(this.value)"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="pa" ${lang==='pa'?'selected':''}>ਪੰ</option><option value="hi" ${lang==='hi'?'selected':''}>हि</option><option value="no" ${lang==='no'?'selected':''}>NO</option></select>`}
+
+// State
+let S={role:null,view:'home',tab:'cards',uid:'',uname:'',teacherId:'',selCat:null,cats:[],cards:[],students:[],teachers:[],classrooms:[],
+  flashCards:[],flashIdx:0,flashRev:false,qCards:[],qIdx:0,qScore:0,qTotal:0,qStart:0,qAns:false,qCat:'',unread:0,logo:'',welcomeMsg:'',settings:{},
+  filterCR:null,tData:null,searchQ:''};
+
+// Helpers
+function toast(m,ty='ok'){const e=document.createElement('div');e.className='toast toast-'+ty;e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2500)}
+function tSince(ts){if(!ts)return'-';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return'now';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';return Math.floor(s/86400)+'d'}
+function shuf(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+function fmt(ts){const d=new Date(ts);return d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+function esc(s){return(s||'').replace(/'/g,"\\'")}
+function logoH(){return S.logo?'<img class="logo-img" src="'+S.logo+'">':''}
+function confetti(){const c=document.createElement('div');c.className='confetti-box';const cl=['#F5A623','#2ECC71','#E74C3C','#3B82F6','#8B5CF6'];
+  for(let i=0;i<45;i++){const p=document.createElement('div');p.className='confetti-p';p.style.left=Math.random()*100+'%';p.style.background=cl[Math.floor(Math.random()*cl.length)];p.style.animationDelay=Math.random()*2+'s';c.appendChild(p)}
+  document.body.appendChild(c);setTimeout(()=>c.remove(),4000)}
+function getCR(id){return(S.classrooms.find(x=>x.id===id)||{}).name||'—'}
+function getT(id){return(S.teachers.find(x=>x.id===id)||{}).name||'—'}
+function fmtDob(d){if(!d)return'—';return new Date(d+'T12:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}
+function isBdayToday(d){if(!d)return false;const t=new Date(),x=new Date(d+'T12:00:00');return x.getMonth()===t.getMonth()&&x.getDate()===t.getDate()}
+function isBdaySoon(d,days=7){if(!d)return false;const t=new Date();t.setHours(0,0,0,0);for(let i=1;i<=days;i++){const c=new Date(t);c.setDate(c.getDate()+i);const x=new Date(d+'T12:00:00');if(x.getMonth()===c.getMonth()&&x.getDate()===c.getDate())return i}return false}
+const avColors=['av-pur','av-blu','av-grn','av-org','av-pink','av-cyan'];
+function avColor(i){return avColors[i%avColors.length]}
+
+// XP
+const LEVELS=[0,50,120,200,300,450,650,900,1200,1600,2100];
+function getLevel(xp){let l=0;for(let i=0;i<LEVELS.length;i++){if(xp>=LEVELS[i])l=i;else break}return l}
+function getLN(l){return['Beginner','Starter','Learner','Explorer','Achiever','Scholar','Expert','Master','Legend','Champion','Guru'][l]||'Guru'}
+function xpInfo(xp){const l=getLevel(xp);const n=LEVELS[l+1]||LEVELS[LEVELS.length-1];return{level:l,name:getLN(l),needed:n,progress:Math.min(100,((xp-(LEVELS[l]||0))/(n-(LEVELS[l]||0)))*100)}}
+async function addXP(sid,a){const d=await db.collection('students').doc(sid).get();const o=d.data().xp||0;const n=o+a;await db.collection('students').doc(sid).update({xp:n});if(getLevel(n)>getLevel(o))confetti();return n}
+async function updStreak(sid){const d=await db.collection('students').doc(sid).get();const data=d.data();const today=new Date().toISOString().split('T')[0];
+  if(data.lastPracticeDate===today)return data.streak||0;const y=new Date(Date.now()-86400000).toISOString().split('T')[0];
+  const ns=data.lastPracticeDate===y?(data.streak||0)+1:1;await db.collection('students').doc(sid).update({streak:ns,lastPracticeDate:today});return ns}
+
+// Firebase
+async function ldSet(){try{const d=await db.collection('settings').doc('app').get();if(d.exists){S.settings=d.data();S.logo=S.settings.logo||'';S.welcomeMsg=S.settings.welcomeMsg||''}}catch(e){}}
+async function svSet(d){await db.collection('settings').doc('app').set({...S.settings,...d},{merge:true});Object.assign(S.settings,d);S.logo=S.settings.logo||'';S.welcomeMsg=S.settings.welcomeMsg||''}
+async function ldCR(){S.classrooms=(await db.collection('classrooms').orderBy('name').get()).docs.map(d=>({id:d.id,...d.data()}))}
+async function ldCats(tid){const q=tid?db.collection('categories').where('teacherId','in',[tid,'shared']):db.collection('categories');S.cats=(await q.get()).docs.map(d=>({id:d.id,...d.data()}))}
+async function ldCards(c){let q=db.collection('cards');if(c)q=q.where('categoryId','==',c);S.cards=(await q.get()).docs.map(d=>({id:d.id,...d.data()}))}
+async function ldAC(tid){let q=db.collection('cards');if(tid)q=q.where('teacherId','in',[tid,'shared']);S.cards=(await q.get()).docs.map(d=>({id:d.id,...d.data()}))}
+async function ldStu(tid){const q=tid?db.collection('students').where('teacherId','==',tid):db.collection('students');S.students=(await q.get()).docs.map(d=>({id:d.id,...d.data()}))}
+async function ldT(){S.teachers=(await db.collection('teachers').get()).docs.map(d=>({id:d.id,...d.data()}))}
+function compImg(f,mx=400,q=0.7){return new Promise(r=>{const rd=new FileReader();rd.onload=e=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');let w=img.width,h=img.height;if(w>h){if(w>mx){h=h*mx/w;w=mx}}else{if(h>mx){w=w*mx/h;h=mx}}c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);r(c.toDataURL('image/jpeg',q))};img.src=e.target.result};rd.readAsDataURL(f)})}
+function b64(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}
+async function recAct(type,data){if(S.role!=='student'||!S.uid)return;await db.collection('students').doc(S.uid).update({lastSeen:Date.now()});await db.collection('activity').add({studentId:S.uid,studentName:S.uname,teacherId:S.teacherId,type,...data,timestamp:Date.now()})}
+let curA=null;function playA(u){if(curA){curA.pause();curA=null}if(!u)return;curA=new Audio(u);curA.play().catch(()=>{})}
+let mRec=null,aCh=[],recBlob=null;
+
+// Messages
+async function sendMsg(fId,fN,fR,tId,tN,txt){await db.collection('messages').add({fromId:fId,fromName:fN,fromRole:fR,toId:tId,toName:tN,text:txt,timestamp:Date.now(),read:false})}
+async function getMsgs(u1,u2){const s1=await db.collection('messages').where('fromId','==',u1).where('toId','==',u2).get();const s2=await db.collection('messages').where('fromId','==',u2).where('toId','==',u1).get();const m=[...s1.docs.map(d=>({id:d.id,...d.data()})),...s2.docs.map(d=>({id:d.id,...d.data()}))];m.sort((a,b)=>a.timestamp-b.timestamp);return m}
+async function markRd(uid,fid){const s=await db.collection('messages').where('toId','==',uid).where('fromId','==',fid).where('read','==',false).get();if(s.size){const b=db.batch();s.docs.forEach(d=>b.update(d.ref,{read:true}));await b.commit()}}
+async function getUnrd(uid){return(await db.collection('messages').where('toId','==',uid).where('read','==',false).get()).size}
+
+const BADGES=[{id:'first_quiz',ico:'🌟',name:'First Steps'},{id:'quiz5',ico:'📖',name:'Learner'},{id:'quiz15',ico:'🏆',name:'Master'},{id:'perfect',ico:'🎯',name:'Perfect'},{id:'cards50',ico:'📚',name:'Bookworm'},{id:'cards100',ico:'🧠',name:'Big Brain'},{id:'streak7',ico:'🔥',name:'On Fire'},{id:'level5',ico:'👑',name:'Rising Star'}];
+async function chkBadges(sid){const aS=await db.collection('activity').where('studentId','==',sid).get();const acts=aS.docs.map(d=>d.data());const doc=await db.collection('students').doc(sid).get();const sD=doc.data();
+  const qz=acts.filter(a=>a.type==='quiz_complete'),tc=acts.filter(a=>a.type==='practice').reduce((s,a)=>s+(a.cardsViewed||0),0);const earned=[];
+  if(qz.length>=1)earned.push('first_quiz');if(qz.length>=5)earned.push('quiz5');if(qz.length>=15)earned.push('quiz15');
+  if(qz.some(q=>q.score===q.total&&q.total>0))earned.push('perfect');if(tc>=50)earned.push('cards50');if(tc>=100)earned.push('cards100');
+  if((sD.streak||0)>=7)earned.push('streak7');if(getLevel(sD.xp||0)>=5)earned.push('level5');
+  await db.collection('students').doc(sid).update({badges:earned});return earned}
+
+// Bottom Nav
+function showNav(tabs){bnav.style.display='block';$('bnavInner').innerHTML=tabs.map(t=>`<button class="bnav-item ${S.tab===t.id?'on':''}" onclick="S.tab='${t.id}';R()"><span class="ni">${t.ico}</span>${t.label}${t.badge?'<span class="bnav-badge">'+t.badge+'</span>':''}</button>`).join('')}
+function hideNav(){bnav.style.display='none'}
+
+function R(){if(!S.role)return rRole();if(S.role==='admin')return rAdmin();if(S.role==='teacher')return rTeacher();if(S.role==='student')return rStudent()}
+function doLogout(){S.role=null;const ur=new URLSearchParams(window.location.search).get('role');if(ur&&['admin','teacher','student'].includes(ur)){lP(ur)}else{R()}}
+
+// ============ LOGIN ============
+function rRole(){hideNav();app.innerHTML=`<div style="text-align:center;padding:40px 0 20px">${logoH()}<div class="h1" style="margin-top:12px;font-size:28px;background:linear-gradient(135deg,var(--saf),var(--pur));-webkit-background-clip:text;-webkit-text-fill-color:transparent">ਪੰਜਾਬੀ ਸਿੱਖੋ</div>
+<p class="sub" style="margin-top:6px">Learn Punjabi — Interactive Platform</p></div>
+<div style="text-align:right;margin-bottom:14px">${langSel()}</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:12px">
+  <div class="dash-card dc-purple" onclick="lP('admin')" style="flex:1"><div class="dc-icon">🛡️</div><div class="dc-title">${t('admin')}</div></div>
+  <div class="dash-card dc-blue" onclick="lP('teacher')" style="flex:1"><div class="dc-icon">👩‍🏫</div><div class="dc-title">${t('teacher')}</div></div>
+</div>
+<div class="dash-card dc-green" onclick="lP('student')" style="grid-column:span 2"><div class="dc-icon">🧑‍🎓</div><div class="dc-title">${t('student')}</div><div class="dc-sub">Learn & Practice Punjabi</div></div>
+</div>`}
+
+function lP(role){hideNav();const urlR=new URLSearchParams(window.location.search).get('role');
+  const colors={admin:'var(--pur)',teacher:'var(--blu)',student:'var(--grn)'};
+  const icons={admin:'🛡️',teacher:'👩‍🏫',student:'🧑‍🎓'};
+  let h=`<div style="text-align:center;padding:30px 0 20px">${logoH()}<div style="width:64px;height:64px;border-radius:20px;background:${colors[role]};display:flex;align-items:center;justify-content:center;font-size:32px;margin:16px auto">${icons[role]}</div>
+  <div class="h2">${t(role)} ${t('login')}</div></div>
+  <div style="text-align:right;margin-bottom:10px">${langSel()}</div><div class="panel">`;
+  if(role!=='admin')h+=`<div class="fld"><label class="lbl">${t('username')}</label><input class="inp" id="lU" placeholder="${t('username')}"></div>`;
+  h+=`<div class="fld"><label class="lbl">${t('password')}</label><input class="inp" type="password" id="lPw" placeholder="${t('password')}" onkeydown="if(event.key==='Enter')doLogin('${role}')"></div>
+  <button class="btn btn-p btn-w" id="lB" onclick="doLogin('${role}')">${t('login')}</button></div>`;
+  if(!urlR)h+=`<button class="back" onclick="S.role=null;R()">← ${t('back')}</button>`;app.innerHTML=h}
+
+async function doLogin(role){const btn=$('lB');btn.disabled=true;btn.textContent='...';
+  try{if(role==='admin'){if($('lPw').value!==ADMIN_PW){toast(t('wrongPassword'),'err');btn.disabled=false;btn.textContent=t('login');return}
+    S.role='admin';S.uid='admin';S.uname='Admin';S.tab='home';await initA();return}
+    const u=($('lU')||{}).value?.trim().toLowerCase(),p=$('lPw').value.trim();if(!u||!p){toast(t('fillAll'),'err');btn.disabled=false;btn.textContent=t('login');return}
+    const col=role==='teacher'?'teachers':'students';const snap=await db.collection(col).where('username','==',u).get();
+    if(snap.empty){toast(t('notFound'),'err');btn.disabled=false;btn.textContent=t('login');return}
+    const doc=snap.docs[0],data=doc.data();if(data.password!==p){toast(t('wrongPassword'),'err');btn.disabled=false;btn.textContent=t('login');return}
+    S.uid=doc.id;S.uname=data.name||data.username;S.role=role;
+    if(role==='teacher'){S.tab='home';await initTP()}
+    else{S.teacherId=data.teacherId;S.tab='home';S.view='home';await db.collection('students').doc(doc.id).update({lastSeen:Date.now()});await ldCats(data.teacherId);await ldCR();S.unread=await getUnrd(S.uid);R()}
+  }catch(e){toast(e.message,'err');btn.disabled=false;btn.textContent=t('login')}}
+
+// ====================== ADMIN ======================
+async function initA(){app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldT();await ldStu();await ldCR();rAdmin()}
+
+function rAdmin(){
+  showNav([{id:'home',ico:'🏠',label:t('home')},{id:'classrooms',ico:'🏫',label:t('classrooms')},{id:'teachers',ico:'👩‍🏫',label:t('teachers')},{id:'students',ico:'👥',label:t('students')},{id:'settings',ico:'⚙️',label:'More'}]);
+  if(S.tab==='home')rAHome();else if(S.tab==='classrooms')rACR();else if(S.tab==='teachers')rATeach();else if(S.tab==='students')rAStu();
+  else if(S.tab==='messages')rAMsg();else if(S.tab==='attendance')rAAtt();else if(S.tab==='settings')rASet()}
+
+function rAHome(){
+  // Birthday check
+  const bdT=[],bdS=[];[...S.teachers,...S.students].forEach(p=>{const role=S.teachers.includes(p)?'👩‍🏫':'🧑‍🎓';if(isBdayToday(p.dob))bdT.push({...p,role});else{const d=isBdaySoon(p.dob);if(d)bdS.push({...p,role,inDays:d})}});
+  let h=`<div class="topbar"><div class="topbar-left"><div class="topbar-avatar">🛡️</div><div class="topbar-info"><div class="name">${S.uname}</div><div class="greeting">${t('admin')} Dashboard</div></div></div>
+  <div class="topbar-actions">${langSel()}<button class="btn-icon" onclick="doLogout()">🚪</button></div></div>`;
+
+  if(bdT.length){h+=`<div class="bday"><h4>🎂 ${t('todayBirthdays')}</h4>`;bdT.forEach(p=>{h+=`<div class="bday-item">${p.role} <b>${p.name}</b></div>`});h+='</div>'}
+  if(bdS.length){h+=`<div class="bday" style="border-color:rgba(245,158,11,.2)"><h4 style="color:var(--saf)">📅 ${t('upcomingBirthdays')}</h4>`;bdS.forEach(p=>{h+=`<div class="bday-item">${p.role} <b>${p.name}</b> — ${p.inDays} ${t('days')}</div>`});h+='</div>'}
+
+  h+=`<div class="dash-grid">
+    <div class="dash-card dc-blue" onclick="S.tab='classrooms';R()"><div class="dc-icon">🏫</div><div class="dc-title">${t('classrooms')}</div><div class="dc-sub">${S.classrooms.length} total</div></div>
+    <div class="dash-card dc-purple" onclick="S.tab='teachers';R()"><div class="dc-icon">👩‍🏫</div><div class="dc-title">${t('teachers')}</div><div class="dc-sub">${S.teachers.length} total</div></div>
+    <div class="dash-card dc-green" onclick="S.tab='students';R()"><div class="dc-icon">👥</div><div class="dc-title">${t('students')}</div><div class="dc-sub">${S.students.length} total</div></div>
+    <div class="dash-card dc-orange" onclick="S.tab='messages';R()"><div class="dc-icon">💬</div><div class="dc-title">${t('messages')}</div><div class="dc-sub">${t('broadcast')}</div></div>
+    <div class="dash-card dc-cyan" onclick="S.tab='attendance';R()"><div class="dc-icon">📋</div><div class="dc-title">${t('attendance')}</div><div class="dc-sub">Reports & stats</div></div>
+    <div class="dash-card dc-pink" onclick="S.tab='settings';R()"><div class="dc-icon">⚙️</div><div class="dc-title">${t('settings')}</div><div class="dc-sub">Logo & welcome</div></div>
+  </div>`;app.innerHTML=h}
+
+// Admin Classrooms
+function rACR(){let h=`<div class="topbar"><div class="topbar-left"><div class="h2">🏫 ${t('classrooms')}</div></div><button class="btn btn-p btn-sm" onclick="showACRAdd()">+ ${t('add')}</button></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpClassroom')}</div></div>`;
+  if(!S.classrooms.length)h+='<div class="empty"><div class="e-ico">🏫</div><p>No classrooms yet</p></div>';
+  else S.classrooms.forEach((c,i)=>{const ts=S.teachers.filter(t=>(t.classroomIds||[]).includes(c.id));const sc=S.students.filter(s=>s.classroomId===c.id).length;
+    h+=`<div class="panel" style="cursor:pointer" onclick="editACR('${c.id}')"><div class="flex items-center gap-12"><div class="cat-circle" style="background:linear-gradient(135deg,${['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899'][i%5]},${['#2563EB','#7C3AED','#27AE60','#D97706','#DB2777'][i%5]})">🏫</div>
+    <div class="flex-1"><div class="h3">${c.name}</div><div class="sub2">👩‍🏫 ${ts.map(t=>t.name).join(', ')||'—'} · ${sc} students</div></div></div></div>`});
+  app.innerHTML=h}
+function showACRAdd(){app.innerHTML=`<button class="back" onclick="rAdmin()">← ${t('back')}</button><div class="panel"><div class="panel-title">🏫 ${t('add')} ${t('classroom')}</div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpClassroom')}</div></div>
+  <div class="fld"><label class="lbl">${t('name')}</label><input class="inp" id="crN" placeholder="e.g. Class A"></div>
+  <button class="btn btn-p btn-w" onclick="addACR()">✅ ${t('create')}</button></div>`}
+async function addACR(){const n=$('crN').value.trim();if(!n)return toast(t('fillAll'),'err');await db.collection('classrooms').add({name:n,createdAt:Date.now()});await ldCR();toast(t('created'));rAdmin()}
+function editACR(id){const c=S.classrooms.find(x=>x.id===id);const assigned=S.teachers.filter(t=>(t.classroomIds||[]).includes(id));
+  let tOpts=`<option value="">— No temp teacher —</option>`;S.teachers.forEach(t=>{tOpts+=`<option value="${t.id}" ${c.tempTeacherId===t.id?'selected':''}>${t.name} ${t.type==='vikar'?'(Vikar)':''}</option>`});
+  app.innerHTML=`<button class="back" onclick="rAdmin()">← ${t('back')}</button><div class="panel"><div class="panel-title">✏️ ${c.name}</div>
+  <div class="fld"><label class="lbl">${t('name')}</label><input class="inp" id="ecrN" value="${c.name}"></div>
+  <div style="margin-bottom:14px;font-size:12px;color:var(--txt3)">👩‍🏫 Assigned: ${assigned.map(t=>t.name).join(', ')||'None'}</div>
+  <div class="panel" style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2)"><div class="panel-title" style="color:var(--warn)">⚠️ Temp Teacher</div>
+  <div class="fld"><select class="inp" id="ecrTemp">${tOpts}</select></div></div>
+  <div class="flex gap-8"><button class="btn btn-p flex-1" onclick="svACR('${id}')">${t('save')}</button><button class="btn btn-d flex-1" onclick="delACR('${id}')">🗑</button></div></div>`}
+async function svACR(id){await db.collection('classrooms').doc(id).update({name:$('ecrN').value.trim(),tempTeacherId:$('ecrTemp').value||null});await ldCR();toast(t('saved'));rAdmin()}
+async function delACR(id){if(!confirm(t('delete')+'?'))return;await db.collection('classrooms').doc(id).delete();await ldCR();toast(t('deleted'));rAdmin()}
+
+// Admin Teachers
+function rATeach(){let h=`<div class="topbar"><div class="topbar-left"><div class="h2">👩‍🏫 ${t('teachers')}</div></div><button class="btn btn-p btn-sm" onclick="showAT()">+ ${t('add')}</button></div>`;
+  S.teachers.forEach((x,i)=>{const crs=(x.classroomIds||[]).map(id=>getCR(id)).join(', ')||'—';const sc=S.students.filter(s=>s.teacherId===x.id).length;
+    const typeBadge=x.type==='vikar'?'<span class="tag tag-org">Vikar</span>':'<span class="tag tag-grn">Perm</span>';
+    h+=`<div class="list-item clickable" onclick="showATD('${x.id}')"><div class="avatar ${avColor(i)}">${(x.name||'T')[0]}</div>
+    <div class="flex-1"><div class="h3">${x.name} ${typeBadge}</div><div class="sub2">🏫 ${crs} · ${sc} students · <span class="pw-tag">${x.password}</span></div></div></div>`});
+  app.innerHTML=h}
+
+function showAT(){let crOpts=S.classrooms.map(c=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px"><input type="checkbox" class="crCb" value="${c.id}"> ${c.name}</label>`).join('');
+  app.innerHTML=`<button class="back" onclick="rAdmin()">← ${t('back')}</button><div class="panel"><div class="panel-title">➕ ${t('add')} ${t('teacher')}</div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpTeacher')}</div></div>
+  <div class="fld"><label class="lbl">${t('fullName')}</label><input class="inp" id="tN"></div>
+  <div class="fld"><label class="lbl">${t('phone')}</label><input class="inp" id="tPh" type="tel"></div>
+  <div class="fld"><label class="lbl">${t('dob')}</label><input class="inp" id="tDob" type="date"></div>
+  <div class="fld"><label class="lbl">${t('email')}</label><input class="inp" id="tEm" type="email"></div>
+  <div class="fld"><label class="lbl">${t('username')}</label><input class="inp" id="tU" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9]/g,'')"></div>
+  <div class="fld"><label class="lbl">${t('password')}</label><input class="inp" id="tP"></div>
+  <div class="fld"><label class="lbl">Type</label><select class="inp" id="tType"><option value="permanent">Permanent</option><option value="vikar">Substitute (Vikar)</option></select></div>
+  <div class="fld"><label class="lbl">${t('classrooms')}</label>${crOpts||'<p class="sub2">Create classrooms first</p>'}</div>
+  <button class="btn btn-p btn-w" onclick="addAT()">✅ ${t('create')}</button></div>`}
+
+async function addAT(){const n=$('tN').value.trim(),ph=$('tPh').value.trim(),dob=$('tDob').value,em=$('tEm').value.trim(),u=$('tU').value.trim(),p=$('tP').value.trim(),ty=$('tType').value;
+  if(!n||!u||!p)return toast(t('fillAll'),'err');if(p.length<4)return toast('Min 4','err');
+  if(!(await db.collection('teachers').where('username','==',u).get()).empty)return toast('Taken','err');
+  const crIds=[...document.querySelectorAll('.crCb:checked')].map(c=>c.value);
+  await db.collection('teachers').add({name:n,phone:ph,dob,email:em,username:u,password:p,type:ty,classroomIds:crIds,createdAt:Date.now()});
+  await ldT();toast(t('created'));rAdmin()}
+
+async function showATD(tid){const x=S.teachers.find(v=>v.id===tid);
+  app.innerHTML=`<button class="back" onclick="rAdmin()">← ${t('back')}</button>
+  <div style="text-align:center;margin-bottom:16px"><div class="avatar av-pur" style="width:56px;height:56px;font-size:24px;border-radius:18px;margin:0 auto">${(x.name||'T')[0]}</div>
+  <div class="h2" style="margin-top:10px">${x.name}</div><div class="sub">@${x.username} · <span class="pw-tag">${x.password}</span> · ${x.type==='vikar'?'🔄 Vikar':'📌 Permanent'}</div></div>
+  <div class="panel"><div style="font-size:13px;line-height:2.2">📱 ${x.phone||'—'}<br>🎂 ${fmtDob(x.dob)}<br>📧 ${x.email||'—'}<br>🏫 ${(x.classroomIds||[]).map(id=>getCR(id)).join(', ')||'—'}</div></div>
+  <div class="panel"><div class="panel-title">✏️ ${t('edit')}</div>
+  <div class="fld"><label class="lbl">${t('name')}</label><input class="inp" id="eN" value="${x.name}"></div>
+  <div class="fld"><label class="lbl">${t('password')}</label><input class="inp" id="eP" value="${x.password}"></div>
+  <div class="fld"><label class="lbl">Type</label><select class="inp" id="eType"><option value="permanent" ${x.type!=='vikar'?'selected':''}>Permanent</option><option value="vikar" ${x.type==='vikar'?'selected':''}>Vikar</option></select></div>
+  <div class="flex gap-8"><button class="btn btn-p flex-1" onclick="svATD('${tid}')">${t('save')}</button><button class="btn btn-d flex-1" onclick="delAT('${tid}')">🗑</button></div></div>`}
+
+async function svATD(tid){await db.collection('teachers').doc(tid).update({name:$('eN').value.trim(),password:$('eP').value.trim(),type:$('eType').value});await ldT();toast(t('saved'));rAdmin()}
+async function delAT(tid){if(!confirm(t('delete')+'?'))return;await db.collection('teachers').doc(tid).delete();await ldT();toast(t('deleted'));rAdmin()}
+
+// Admin Students
+function rAStu(){let h=`<div class="topbar"><div class="topbar-left"><div class="h2">👥 ${t('students')}</div></div></div>
+  <div class="chip-row"><div class="chip ${!S.filterCR?'on':''}" onclick="S.filterCR=null;R()">${t('all')}</div>`;
+  S.classrooms.forEach(c=>{h+=`<div class="chip ${S.filterCR===c.id?'on':''}" onclick="S.filterCR='${c.id}';R()">${c.name}</div>`});h+='</div>';
+  let fl=S.students;if(S.filterCR)fl=fl.filter(s=>s.classroomId===S.filterCR);
+  fl.forEach((s,i)=>{h+=`<div class="list-item clickable" onclick="showASD('${s.id}')"><div class="avatar ${avColor(i)}">${(s.name||'S')[0]}</div>
+    <div class="flex-1"><div class="h3">${s.name}</div><div class="sub2">👩‍🏫 ${getT(s.teacherId)} · <span class="tag tag-pur">${getCR(s.classroomId)}</span> · <span class="pw-tag">${s.password}</span></div></div></div>`});
+  app.innerHTML=h}
+
+function showASD(sid){const s=S.students.find(x=>x.id===sid);
+  let tOpts=S.teachers.map(x=>`<option value="${x.id}" ${s.teacherId===x.id?'selected':''}>${x.name}</option>`).join('');
+  let crOpts=S.classrooms.map(c=>`<option value="${c.id}" ${s.classroomId===c.id?'selected':''}>${c.name}</option>`).join('');
+  app.innerHTML=`<button class="back" onclick="rAdmin()">← ${t('back')}</button>
+  <div style="text-align:center;margin-bottom:16px"><div class="avatar av-grn" style="width:56px;height:56px;font-size:24px;border-radius:18px;margin:0 auto">${(s.name||'S')[0]}</div>
+  <div class="h2" style="margin-top:10px">${s.name}</div><div class="sub">@${s.username} · <span class="pw-tag">${s.password}</span></div></div>
+  <div class="panel"><div style="font-size:13px;line-height:2">🎂 ${fmtDob(s.dob)} · 📱 ${s.contact||'—'}<br>👩‍🏫 ${getT(s.teacherId)} · 🏫 ${getCR(s.classroomId)}</div></div>
+  <div class="panel"><div class="panel-title">🔄 ${t('reassign')}</div>
+  <div class="fld"><label class="lbl">${t('changeTeacher')}</label><select class="inp" id="rsT">${tOpts}</select></div>
+  <div class="fld"><label class="lbl">${t('changeClassroom')}</label><select class="inp" id="rsCR">${crOpts}</select></div>
+  <button class="btn btn-p btn-w" onclick="reassignS('${sid}')">🔄 ${t('reassign')}</button></div>
+  <div class="panel"><div class="panel-title">✏️ ${t('edit')}</div>
+  <div class="fld"><label class="lbl">${t('name')}</label><input class="inp" id="esN" value="${s.name||''}"></div>
+  <div class="fld"><label class="lbl">${t('password')}</label><input class="inp" id="esP" value="${s.password||''}"></div>
+  <div class="flex gap-8"><button class="btn btn-p flex-1" onclick="svASD('${sid}')">${t('save')}</button><button class="btn btn-d flex-1" onclick="delASD('${sid}')">🗑</button></div></div>`}
+async function reassignS(sid){await db.collection('students').doc(sid).update({teacherId:$('rsT').value,classroomId:$('rsCR').value});await ldStu();toast(t('saved'));rAdmin()}
+async function svASD(sid){await db.collection('students').doc(sid).update({name:$('esN').value.trim(),password:$('esP').value.trim()});await ldStu();toast(t('saved'));rAdmin()}
+async function delASD(sid){if(!confirm(t('delete')+'?'))return;await db.collection('students').doc(sid).delete();await ldStu();toast(t('deleted'));rAdmin()}
+
+// Admin Messages
+function rAMsg(){let h=`<div class="topbar"><div class="h2">💬 ${t('messages')}</div></div>
+  <div class="dash-grid" style="margin-bottom:14px">
+    <div class="dash-card dc-green" onclick="aBc('students')"><div class="dc-icon">📢</div><div class="dc-title">${t('students')}</div></div>
+    <div class="dash-card dc-blue" onclick="aBc('teachers')"><div class="dc-icon">👩‍🏫</div><div class="dc-title">${t('teachers')}</div></div>
+  </div>`;
+  S.teachers.forEach((x,i)=>{h+=`<div class="list-item clickable" onclick="aChat('${x.id}','${esc(x.name)}')"><div class="avatar ${avColor(i)}">${(x.name||'T')[0]}</div><div class="flex-1"><div class="h3">${x.name}</div></div></div>`});
+  app.innerHTML=h}
+async function aBc(tg){app.innerHTML=`<button class="back" onclick="rAdmin()">← ${t('back')}</button><div class="panel"><div class="panel-title">📢 ${t('broadcast')}</div>
+  <div class="fld"><textarea class="inp" id="bcM" rows="3" placeholder="${t('messages')}..."></textarea></div><button class="btn btn-p btn-w" id="bcB" onclick="sndABc('${tg}')">📢 ${t('send')}</button></div>`}
+async function sndABc(tg){const txt=$('bcM').value.trim();if(!txt)return;$('bcB').disabled=true;for(const u of(tg==='teachers'?S.teachers:S.students))await sendMsg('admin','Admin','admin',u.id,u.name||u.username,txt);toast(t('sent'));rAdmin()}
+async function aChat(uid,name){app.innerHTML='<div class="loading"><div class="loader"></div></div>';await markRd('admin',uid);const msgs=await getMsgs('admin',uid);
+  let h=`<button class="back" onclick="rAdmin()">← ${t('back')}</button><div class="panel"><div class="panel-title">💬 ${name}</div><div class="msg-list" id="mL">`;
+  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';
+  else msgs.forEach(m=>{const s=m.fromId==='admin';h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}<div class="msg-time">${fmt(m.timestamp)}</div></div>`});
+  h+=`</div><div class="msg-compose"><input class="inp" id="mI" placeholder="..." onkeydown="if(event.key==='Enter')sndAM('${uid}','${esc(name)}')"><button class="btn btn-p btn-sm" onclick="sndAM('${uid}','${esc(name)}')">${t('send')}</button></div></div>`;
+  app.innerHTML=h;const l=$('mL');if(l)l.scrollTop=l.scrollHeight}
+async function sndAM(uid,name){const x=$('mI').value.trim();if(!x)return;$('mI').value='';await sendMsg('admin','Admin','admin',uid,name,x);aChat(uid,name)}
+
+// Admin Attendance
+function rAAtt(){let h=`<div class="topbar"><div class="h2">📋 ${t('attendance')}</div></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpAttAdmin')}</div></div>
+  <div class="fld"><select class="inp" id="attMonth" onchange="loadAAtt()">`;
+  for(let i=0;i<6;i++){const d=new Date();d.setMonth(d.getMonth()-i);const m=d.toISOString().substring(0,7);h+=`<option value="${m}">${d.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</option>`}
+  h+=`</select></div><div class="fld"><select class="inp" id="attCR" onchange="loadAAtt()"><option value="">${t('all')} ${t('classrooms')}</option>`;
+  S.classrooms.forEach(c=>{h+=`<option value="${c.id}">${c.name}</option>`});
+  h+=`</select></div><div id="aAttBody"><div class="loading"><div class="loader"></div></div></div>`;
+  app.innerHTML=h;setTimeout(loadAAtt,0)}
+async function loadAAtt(){const el=$('aAttBody');if(!el)return;const month=$('attMonth')?.value||new Date().toISOString().substring(0,7);const crId=$('attCR')?.value||'';
+  let q=db.collection('attendance').where('date','>=',month+'-01').where('date','<=',month+'-31');
+  if(crId){const crT=S.teachers.filter(t=>(t.classroomIds||[]).includes(crId)).map(t=>t.id);if(crT.length)q=q.where('teacherId','in',crT.slice(0,10))}
+  const snap=await q.get();const records=snap.docs.map(d=>d.data());
+  if(!records.length){el.innerHTML='<div class="empty"><p>No data</p></div>';return}
+  const tP=records.reduce((s,r)=>s+r.presentCount,0),tA=records.reduce((s,r)=>s+r.absentCount,0);const avg=tP+tA>0?Math.round(tP/(tP+tA)*100):0;
+  let h=`<div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">${records.length}</div><div class="score-lbl">Days</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--grn)">${avg}%</div><div class="score-lbl">Avg</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--blu)">${tP}</div><div class="score-lbl">Present</div></div></div>`;
+  // Per student
+  const ss={};records.forEach(r=>{(r.records||[]).forEach(sr=>{if(!ss[sr.studentId])ss[sr.studentId]={name:sr.studentName,p:0,a:0,t:0};ss[sr.studentId].t++;if(sr.status==='present')ss[sr.studentId].p++;if(sr.status==='absent')ss[sr.studentId].a++})});
+  Object.entries(ss).sort((a,b)=>(b[1].p/b[1].t)-(a[1].p/a[1].t)).forEach(([id,st])=>{const rate=st.t?Math.round(st.p/st.t*100):0;const color=rate>=80?'var(--grn)':rate>=60?'var(--warn)':'var(--red)';
+    h+=`<div style="padding:10px 0;border-bottom:1px solid var(--brd)"><div class="flex justify-between items-center"><div class="h3">${st.name}</div><div style="font-weight:800;color:${color}">${rate}%</div></div>
+    <div class="flex gap-8 items-center" style="margin-top:4px"><div class="att-stat-bar flex-1"><div class="att-fill" style="width:${rate}%;background:${color}"></div></div><span class="sub2">${st.p}/${st.t}</span></div></div>`});
+  // Daily
+  h+=`<div class="sec-title" style="margin-top:16px">📅 Daily Log</div>`;
+  [...records].sort((a,b)=>b.date.localeCompare(a.date)).forEach(r=>{const ds=new Date(r.date+'T12:00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+    const rate=r.totalCount?Math.round(r.presentCount/r.totalCount*100):0;
+    h+=`<div class="list-item"><div style="font-size:18px">${rate>=80?'🟢':rate>=60?'🟡':'🔴'}</div>
+    <div class="flex-1"><div class="h3">${ds}</div><div class="sub2">✍️ ${r.signedBy||r.teacherName||''} ${r.signedAt?'@ '+r.signedAt:''} · ${r.presentCount}/${r.totalCount}${r.remark?' · 📝 '+r.remark:''}</div></div></div>`});
+  el.innerHTML=h}
+
+// Admin Settings
+function rASet(){app.innerHTML=`<div class="topbar"><div class="h2">⚙️ ${t('settings')}</div></div>
+  <div class="panel"><div class="panel-title">🖼️ Logo</div>
+  ${S.logo?'<img src="'+S.logo+'" style="width:80px;height:80px;border-radius:16px;object-fit:contain;display:block;margin-bottom:12px;background:var(--card2)">':''}
+  <button class="btn btn-s btn-w" onclick="$('logoF').click()">📸 Upload Logo</button>
+  <input type="file" accept="image/*" id="logoF" style="display:none" onchange="upLogo(this)"></div>
+  <div class="panel"><div class="panel-title">📝 Welcome Message</div>
+  <div class="fld"><textarea class="inp" id="wmT" rows="3">${S.welcomeMsg}</textarea></div>
+  <button class="btn btn-p btn-w" onclick="svWM()">💾 ${t('save')}</button></div>`}
+async function upLogo(i){if(!i.files[0])return;try{const d=await compImg(i.files[0],200,0.8);await svSet({logo:d});toast(t('saved'));rAdmin()}catch(e){toast('Error','err')}}
+async function svWM(){await svSet({welcomeMsg:$('wmT').value.trim()});S.welcomeMsg=S.settings.welcomeMsg;toast(t('saved'))}
+
+// ====================== TEACHER ======================
+async function initTP(){app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  const tDoc=await db.collection('teachers').doc(S.uid).get();S.tData=tDoc.data();
+  await ldCats(S.uid);await ldAC(S.uid);await ldStu(S.uid);await ldCR();S.unread=await getUnrd(S.uid);rTeacher()}
+
+function rTeacher(){
+  showNav([{id:'home',ico:'🏠',label:t('home')},{id:'cards',ico:'📚',label:t('cards')},{id:'students',ico:'👥',label:t('students')},{id:'quiz',ico:'🎮',label:t('quiz')},{id:'profile',ico:'👤',label:t('profile')}]);
+  if(S.tab==='home')rTHome();else if(S.tab==='cards')rTCards();else if(S.tab==='students')rTStudents();
+  else if(S.tab==='categories')rTCats();else if(S.tab==='messages')rTMsg();else if(S.tab==='wod')rTWod();
+  else if(S.tab==='attendance')rTAtt();else if(S.tab==='quiz')rTQuiz();else if(S.tab==='profile')rTProfile()}
+
+function rTHome(){
+  const crs=(S.tData?.classroomIds||[]).map(id=>getCR(id)).join(', ')||'';
+  let h=`<div class="topbar"><div class="topbar-left"><div class="topbar-avatar" style="background:linear-gradient(135deg,var(--blu),var(--pur))">${S.logo?'<img src="'+S.logo+'">':(S.uname||'T')[0]}</div>
+  <div class="topbar-info"><div class="name">${S.uname} 👋</div><div class="greeting">${crs||'Teacher Dashboard'}</div></div></div>
+  <div class="topbar-actions">${langSel()}</div></div>
+  <div class="dash-grid">
+    <div class="dash-card dc-green" onclick="S.tab='cards';R()"><div class="dc-icon">📚</div><div class="dc-title">${t('cards')}</div><div class="dc-sub">${S.cards.length} cards</div></div>
+    <div class="dash-card dc-blue" onclick="S.tab='categories';R()"><div class="dc-icon">📁</div><div class="dc-title">${t('categories')}</div><div class="dc-sub">Organize topics</div></div>
+    <div class="dash-card dc-purple" onclick="S.tab='students';R()"><div class="dc-icon">👥</div><div class="dc-title">${t('students')}</div><div class="dc-sub">${S.students.length} students</div></div>
+    <div class="dash-card dc-orange" onclick="S.tab='messages';R()"><div class="dc-icon">💬</div><div class="dc-title">${t('messages')}</div><div class="dc-sub">Chat with students</div></div>
+    <div class="dash-card dc-cyan" onclick="S.tab='wod';R()"><div class="dc-icon">✨</div><div class="dc-title">${t('wordOfDay')}</div><div class="dc-sub">Set daily word</div></div>
+    <div class="dash-card dc-pink" onclick="S.tab='attendance';R()"><div class="dc-icon">📋</div><div class="dc-title">${t('attendance')}</div><div class="dc-sub">Track daily</div></div>
+  </div>`;app.innerHTML=h}
+
+// Teacher Cards
+function rTCards(){let h=`<div class="topbar"><div class="h2">📚 ${t('cards')}</div><button class="btn btn-p btn-sm" onclick="showAddCard()">+ ${t('add')}</button></div>
+  <div class="chip-row"><div class="chip ${!S.selCat?'on':''}" onclick="S.selCat=null;fC()">${t('all')}</div>`;
+  S.cats.forEach(c=>{h+=`<div class="chip ${S.selCat===c.id?'on':''}" onclick="S.selCat='${c.id}';fC()">${c.name}</div>`});h+='</div>';
+  const fl=S.selCat?S.cards.filter(c=>c.categoryId===S.selCat):S.cards;
+  if(!fl.length)h+='<div class="empty"><div class="e-ico">🃏</div><p>'+t('noCards')+'</p></div>';
+  else{h+='<div class="card-grid">';fl.forEach(c=>{h+=`<div class="flash-card" onclick="editCrd('${c.id}')">${c.imageUrl?'<img src="'+c.imageUrl+'" alt="">':'<div style="width:100%;aspect-ratio:1;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:40px">🖼</div>'}
+    <div class="fc-label"><div class="fc-gur">${c.gurmukhi}</div><div class="fc-eng">${c.english}</div></div></div>`});h+='</div>'}
+  app.innerHTML=h}
+async function fC(){if(S.selCat)await ldCards(S.selCat);else await ldAC(S.uid);rTeacher()}
+
+function editCrd(cid){const c=S.cards.find(x=>x.id===cid);
+  app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button>
+  ${c.imageUrl?'<img src="'+c.imageUrl+'" style="width:100%;height:200px;object-fit:cover;border-radius:var(--r3);margin-bottom:14px">':''}
+  <div class="panel"><div class="panel-title">✏️ ${t('edit')}</div>
+  <div class="fld"><label class="lbl">${t('gurmukhi')}</label><input class="inp" id="ecG" value="${c.gurmukhi}" style="font-size:20px"></div>
+  <div class="fld"><label class="lbl">${t('english')}</label><input class="inp" id="ecE" value="${c.english}"></div>
+  <div class="flex gap-8"><button class="btn btn-p flex-1" onclick="svCrd('${cid}')">${t('save')}</button>
+  ${c.audioUrl?'<button class="btn btn-s flex-1" onclick="playA(\''+c.audioUrl+'\')">🔊 Play</button>':''}
+  <button class="btn btn-d flex-1" onclick="delCrd('${cid}')">🗑</button></div></div>`}
+async function svCrd(cid){await db.collection('cards').doc(cid).update({gurmukhi:$('ecG').value.trim(),english:$('ecE').value.trim()});await ldAC(S.uid);toast(t('saved'));rTeacher()}
+async function delCrd(id){if(!confirm('?'))return;await db.collection('cards').doc(id).delete();await ldAC(S.uid);toast(t('deleted'));rTeacher()}
+
+function showAddCard(){recBlob=null;let h=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">✏️ ${t('add')} ${t('cards')}</div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpCard')}</div></div>
+  <div class="fld"><label class="lbl">${t('categories')}</label><select class="inp" id="cC">`;S.cats.forEach(c=>{h+=`<option value="${c.id}">${c.name}</option>`});
+  h+=`</select></div><div class="fld"><label class="lbl">${t('gurmukhi')}</label><input class="inp" id="cG" style="font-size:20px" placeholder="ਸੇਬ"></div>
+  <div class="fld"><label class="lbl">${t('english')}</label><input class="inp" id="cE" placeholder="Apple"></div>
+  <div class="fld"><label class="lbl">📸 ${t('picture')}</label><button class="btn btn-s btn-w" onclick="$('iF').click()">📸 Upload</button>
+  <input type="file" accept="image/*" id="iF" style="display:none" onchange="pvI(this)"><div id="iPv"></div></div>
+  <div class="fld"><label class="lbl">🖼️ Examples (optional)</label><div class="flex gap-8">
+  <button class="btn btn-s flex-1" onclick="$('iF2').click()">Ex.1</button><button class="btn btn-s flex-1" onclick="$('iF3').click()">Ex.2</button></div>
+  <input type="file" accept="image/*" id="iF2" style="display:none" onchange="pvEx(this,2)"><input type="file" accept="image/*" id="iF3" style="display:none" onchange="pvEx(this,3)">
+  <div class="flex gap-8 mt-14"><div id="iPv2"></div><div id="iPv3"></div></div></div>
+  <div class="fld"><label class="lbl">🔊 ${t('audio')}</label><div class="flex gap-8 items-center">
+  <button class="btn-icon" id="rB" onclick="tgR()" style="background:var(--red);color:#fff">🎙</button><span id="aS" class="sub2">Tap to record</span></div>
+  <input type="file" accept="audio/*" id="aF" onchange="pvAF(this)" style="font-size:11px;color:var(--txt3);margin-top:6px"><div id="aPv" style="margin-top:6px"></div></div>
+  <button class="btn btn-p btn-w" id="svB" onclick="svNewCrd()">💾 ${t('save')}</button></div>`;app.innerHTML=h}
+function pvI(i){if(i.files[0]){const r=new FileReader();r.onload=e=>{$('iPv').innerHTML='<img style="width:100%;max-height:150px;border-radius:12px;margin-top:8px;object-fit:cover" src="'+e.target.result+'">'};r.readAsDataURL(i.files[0])}}
+function pvEx(i,n){if(i.files[0]){const r=new FileReader();r.onload=e=>{$('iPv'+n).innerHTML='<img style="width:60px;height:60px;border-radius:8px;object-fit:cover" src="'+e.target.result+'">'};r.readAsDataURL(i.files[0])}}
+async function tgR(){if(mRec&&mRec.state==='recording'){mRec.stop();$('rB').style.background='var(--red)';$('rB').innerHTML='🎙';return}
+  try{const st=await navigator.mediaDevices.getUserMedia({audio:true});aCh=[];mRec=new MediaRecorder(st);mRec.ondataavailable=e=>aCh.push(e.data);
+    mRec.onstop=()=>{recBlob=new Blob(aCh,{type:'audio/webm'});st.getTracks().forEach(t=>t.stop());$('aPv').innerHTML='<audio controls src="'+URL.createObjectURL(recBlob)+'" style="width:100%;height:36px"></audio>';$('aS').textContent='✅ Done'};
+    mRec.start();$('rB').innerHTML='⏹';$('aS').textContent='🔴 Recording...'}catch(e){toast('Mic denied','err')}}
+function pvAF(i){if(i.files[0]){recBlob=i.files[0];$('aPv').innerHTML='<audio controls src="'+URL.createObjectURL(recBlob)+'" style="width:100%;height:36px"></audio>';$('aS').textContent='✅'}}
+async function svNewCrd(){const cat=$('cC').value,g=$('cG').value.trim(),e=$('cE').value.trim(),img=$('iF').files[0],img2=$('iF2')?.files[0],img3=$('iF3')?.files[0];
+  if(!g||!e)return toast(t('fillAll'),'err');const btn=$('svB');btn.disabled=true;
+  try{let iu='',au='',iu2='',iu3='';if(img){btn.textContent='📸...';iu=await compImg(img)}if(img2){iu2=await compImg(img2)}if(img3){iu3=await compImg(img3)}
+    if(recBlob){btn.textContent='🔊...';au=await b64(recBlob)}
+    await db.collection('cards').add({categoryId:cat,gurmukhi:g,english:e,imageUrl:iu,imageUrl2:iu2||'',imageUrl3:iu3||'',audioUrl:au,teacherId:S.uid,createdAt:Date.now()});
+    recBlob=null;toast(t('saved'));await ldAC(S.uid);S.tab='cards';rTeacher()}catch(er){toast('Error','err');btn.disabled=false;btn.textContent='💾'}}
+
+// Teacher Categories
+function rTCats(){let h=`<button class="back" onclick="S.tab='home';rTeacher()">← ${t('back')}</button><div class="topbar"><div class="h2">📁 ${t('categories')}</div>
+  <button class="btn btn-p btn-sm" onclick="showAddCat()">+ ${t('add')}</button></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpCat')}</div></div>`;
+  S.cats.forEach((c,i)=>{const n=S.cards.filter(x=>x.categoryId===c.id).length;const colors=['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899','#06B6D4'];
+    h+=`<div class="list-item clickable" onclick="editCat('${c.id}')"><div class="cat-circle" style="background:${colors[i%6]}">${c.gurmukhi?(c.gurmukhi)[0]:'📚'}</div>
+    <div class="flex-1"><div class="h3">${c.name}</div><div class="sub2">${c.gurmukhi||''} · ${n} ${t('cards').toLowerCase()}</div></div><span class="sub2">✏️</span></div>`});
+  app.innerHTML=h}
+function showAddCat(){app.innerHTML=`<button class="back" onclick="S.tab='categories';rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">📁 ${t('add')}</div>
+  <div class="fld"><label class="lbl">${t('english')}</label><input class="inp" id="ncN"></div><div class="fld"><label class="lbl">${t('gurmukhi')}</label><input class="inp" id="ncG"></div>
+  <button class="btn btn-p btn-w" onclick="addCat()">✅ ${t('create')}</button></div>`}
+async function addCat(){const n=$('ncN').value.trim(),g=$('ncG').value.trim();if(!n)return toast(t('fillAll'),'err');
+  await db.collection('categories').add({name:n,gurmukhi:g,emoji:'📚',teacherId:S.uid,createdAt:Date.now()});await ldCats(S.uid);toast(t('created'));S.tab='categories';rTeacher()}
+function editCat(cid){const c=S.cats.find(x=>x.id===cid);app.innerHTML=`<button class="back" onclick="S.tab='categories';rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">✏️ ${t('edit')}</div>
+  <div class="fld"><label class="lbl">${t('english')}</label><input class="inp" id="ecN" value="${c.name}"></div><div class="fld"><label class="lbl">${t('gurmukhi')}</label><input class="inp" id="ecGN" value="${c.gurmukhi||''}"></div>
+  <div class="flex gap-8"><button class="btn btn-p flex-1" onclick="svCat('${cid}')">${t('save')}</button><button class="btn btn-d flex-1" onclick="delCat('${cid}')">🗑</button></div></div>`}
+async function svCat(cid){await db.collection('categories').doc(cid).update({name:$('ecN').value.trim(),gurmukhi:$('ecGN').value.trim()});await ldCats(S.uid);toast(t('saved'));S.tab='categories';rTeacher()}
+async function delCat(id){if(!confirm('?'))return;const s=await db.collection('cards').where('categoryId','==',id).get();const b=db.batch();s.docs.forEach(d=>b.delete(d.ref));b.delete(db.collection('categories').doc(id));await b.commit();await ldCats(S.uid);await ldAC(S.uid);toast(t('deleted'));S.tab='categories';rTeacher()}
+
+// Teacher Students
+function rTStudents(){let h=`<div class="topbar"><div class="h2">👥 ${t('students')}</div><button class="btn btn-p btn-sm" onclick="showAddStu()">+ ${t('add')}</button></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpStudent')}</div></div>`;
+  S.students.forEach((s,i)=>{h+=`<div class="list-item clickable" onclick="showSD('${s.id}')"><div class="avatar ${avColor(i)}">${(s.name||'S')[0]}</div>
+    <div class="flex-1"><div class="h3">${s.name}</div><div class="sub2">@${s.username} · <span class="tag tag-pur">${getCR(s.classroomId)}</span> · <span class="pw-tag">${s.password}</span></div></div></div>`});
+  if(!S.students.length)h+='<div class="empty"><p>'+t('noStudents')+'</p></div>';app.innerHTML=h}
+
+function showAddStu(){const myCR=(S.tData?.classroomIds||[]);let crOpts=myCR.map(id=>`<option value="${id}">${getCR(id)}</option>`).join('');
+  app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">➕ ${t('add')} ${t('student')}</div>
+  <div class="fld"><label class="lbl">${t('fullName')}</label><input class="inp" id="sN"></div>
+  <div class="fld"><label class="lbl">${t('dob')}</label><input class="inp" id="sDob" type="date"></div>
+  <div class="fld"><label class="lbl">${t('contact')}</label><input class="inp" id="sCt"></div>
+  <div class="fld"><label class="lbl">${t('classroom')}</label><select class="inp" id="sCR">${crOpts||'<option>—</option>'}</select></div>
+  <div class="fld"><label class="lbl">${t('username')}</label><input class="inp" id="sU" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9]/g,'')"></div>
+  <div class="fld"><label class="lbl">${t('password')}</label><input class="inp" id="sP"></div>
+  <button class="btn btn-p btn-w" onclick="addSt()">✅ ${t('create')}</button></div>`}
+async function addSt(){const n=$('sN').value.trim(),dob=$('sDob').value,ct=$('sCt').value.trim(),cr=$('sCR').value,u=$('sU').value.trim(),p=$('sP').value.trim();
+  if(!n||!u||!p)return toast(t('fillAll'),'err');if(p.length<4)return toast('Min 4','err');
+  if(!(await db.collection('students').where('username','==',u).get()).empty)return toast('Taken','err');
+  await db.collection('students').add({name:n,dob,contact:ct,classroomId:cr,username:u,password:p,teacherId:S.uid,createdAt:Date.now(),lastSeen:null,badges:[],xp:0,streak:0,lastPracticeDate:''});
+  await ldStu(S.uid);toast(t('created'));rTeacher()}
+
+async function showSD(sid){app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  const stu=S.students.find(x=>x.id===sid);const aS=await db.collection('activity').where('studentId','==',sid).get();
+  const acts=aS.docs.map(d=>d.data());const qz=acts.filter(a=>a.type==='quiz_complete');
+  const tSc=qz.reduce((s,q)=>s+(q.score||0),0),tQ=qz.reduce((s,q)=>s+(q.total||0),0);const acc=tQ?Math.round(tSc/tQ*100):0;
+  app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button>
+  <div style="text-align:center;margin-bottom:14px"><div class="avatar av-grn" style="width:56px;height:56px;font-size:24px;border-radius:18px;margin:0 auto">${(stu.name||'S')[0]}</div>
+  <div class="h2" style="margin-top:8px">${stu.name}</div><div class="sub">@${stu.username} · <span class="tag tag-pur">${getCR(stu.classroomId)}</span></div></div>
+  <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">${qz.length}</div><div class="score-lbl">${t('quizzes')}</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--grn)">${acc}%</div><div class="score-lbl">${t('accuracy')}</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--warn)">🔥${stu.streak||0}</div><div class="score-lbl">${t('streak')}</div></div></div>
+  <div class="panel"><div class="flex gap-8"><button class="btn btn-p flex-1" onclick="openTC('${sid}','${esc(stu.name)}')">💬 ${t('messages')}</button></div>
+  <div class="flex gap-8 mt-14"><input class="inp" id="rpw" placeholder="${t('password')}"><button class="btn btn-s btn-sm" onclick="rstPw('${sid}')">${t('resetPassword')}</button></div>
+  <button class="btn btn-d btn-w" style="margin-top:10px" onclick="delSt('${sid}')">🗑 ${t('delete')}</button></div>`}
+async function rstPw(sid){const p=$('rpw').value.trim();if(!p||p.length<4)return;await db.collection('students').doc(sid).update({password:p});toast(t('saved'))}
+async function delSt(sid){if(!confirm('?'))return;await db.collection('students').doc(sid).delete();await ldStu(S.uid);toast(t('deleted'));rTeacher()}
+
+// Teacher Messages
+function rTMsg(){let h=`<button class="back" onclick="S.tab='home';rTeacher()">← ${t('back')}</button><div class="topbar"><div class="h2">💬 ${t('messages')}</div></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpMsg')}</div></div>
+  <div class="panel" style="cursor:pointer;background:linear-gradient(135deg,rgba(245,166,35,.1),rgba(139,92,246,.1));border:1px solid rgba(245,166,35,.2)" onclick="tBc()"><div class="flex items-center gap-12"><span style="font-size:24px">📢</span><div class="h3">${t('sendToAll')}</div></div></div>`;
+  S.students.forEach((s,i)=>{h+=`<div class="list-item clickable" onclick="openTC('${s.id}','${esc(s.name||s.username)}')"><div class="avatar ${avColor(i)}">${(s.name||'S')[0]}</div><div class="flex-1"><div class="h3">${s.name||s.username}</div></div></div>`});
+  app.innerHTML=h}
+async function openTC(sid,name){app.innerHTML='<div class="loading"><div class="loader"></div></div>';await markRd(S.uid,sid);S.unread=await getUnrd(S.uid);const msgs=await getMsgs(S.uid,sid);
+  let h=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">💬 ${name}</div><div class="msg-list" id="mL">`;
+  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';else msgs.forEach(m=>{const s=m.fromId===S.uid;h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}<div class="msg-time">${fmt(m.timestamp)}</div></div>`});
+  h+=`</div><div class="msg-compose"><input class="inp" id="mI" placeholder="..." onkeydown="if(event.key==='Enter')sndTM('${sid}','${esc(name)}')"><button class="btn btn-p btn-sm" onclick="sndTM('${sid}','${esc(name)}')">${t('send')}</button></div></div>`;
+  app.innerHTML=h;const l=$('mL');if(l)l.scrollTop=l.scrollHeight}
+async function sndTM(sid,name){const x=$('mI').value.trim();if(!x)return;$('mI').value='';await sendMsg(S.uid,S.uname,'teacher',sid,name,x);openTC(sid,name)}
+async function tBc(){app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">📢</div>
+  <div class="fld"><textarea class="inp" id="bcM" rows="3"></textarea></div><button class="btn btn-p btn-w" id="bcB" onclick="sndTBc()">📢 ${t('send')}</button></div>`}
+async function sndTBc(){const x=$('bcM').value.trim();if(!x)return;$('bcB').disabled=true;for(const s of S.students)await sendMsg(S.uid,S.uname,'teacher',s.id,s.name,x);toast(t('sent'));rTeacher()}
+
+// Teacher WoD
+function rTWod(){let h=`<button class="back" onclick="S.tab='home';rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">✨ ${t('wordOfDay')}</div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpWod')}</div></div>
+  <div class="fld"><select class="inp" id="wC"><option value="">— ${t('cards')} —</option>`;
+  S.cards.forEach(c=>{h+=`<option value="${c.id}">${c.gurmukhi} — ${c.english}</option>`});
+  h+=`</select></div><button class="btn btn-p btn-w" onclick="setWod()">✨ Set</button></div><div id="wCur"></div>`;app.innerHTML=h;setTimeout(ldWod,0)}
+async function ldWod(){const today=new Date().toISOString().split('T')[0];const s=await db.collection('wordOfDay').where('teacherId','==',S.uid).where('date','==',today).get();const el=$('wCur');if(!el)return;
+  if(s.empty){el.innerHTML='<div class="empty"><p>None set today</p></div>';return}const w=s.docs[0].data();
+  el.innerHTML=`<div class="wod-card"><div class="wod-lbl">Today</div>${w.imageUrl?'<img class="wod-img" src="'+w.imageUrl+'">':''}<div class="wod-gur">${w.gurmukhi}</div><div class="wod-eng">${w.english}</div></div>`}
+async function setWod(){const cid=$('wC').value;if(!cid)return;const card=S.cards.find(c=>c.id===cid);const today=new Date().toISOString().split('T')[0];
+  const old=await db.collection('wordOfDay').where('teacherId','==',S.uid).where('date','==',today).get();if(!old.empty){const b=db.batch();old.docs.forEach(d=>b.delete(d.ref));await b.commit()}
+  await db.collection('wordOfDay').add({teacherId:S.uid,date:today,gurmukhi:card.gurmukhi,english:card.english,imageUrl:card.imageUrl||'',audioUrl:card.audioUrl||''});toast(t('saved'));rTWod()}
+
+// Teacher Attendance
+let attDate=new Date().toISOString().split('T')[0],attMarks={};
+function rTAtt(){app.innerHTML=`<button class="back" onclick="S.tab='home';rTeacher()">← ${t('back')}</button>
+  <div class="panel"><div class="panel-header"><div class="panel-title">📋 ${t('attendance')}</div>
+  <input class="inp" type="date" value="${attDate}" style="width:auto;padding:8px;font-size:12px" onchange="attDate=this.value;loadTAtt()"></div>
+  <div class="help-tip"><span class="h-ico">⚡</span><div>${t('helpAtt')}</div></div>
+  <div id="attBody"><div class="loading"><div class="loader"></div></div></div></div>`;setTimeout(loadTAtt,0)}
+
+async function loadTAtt(){const el=$('attBody');if(!el)return;
+  const ex=await db.collection('attendance').where('teacherId','==',S.uid).where('date','==',attDate).get();
+  if(!ex.empty){const d=ex.docs[0].data();attMarks={};(d.records||[]).forEach(r=>{attMarks[r.studentId]=r.status})}
+  else{attMarks={};S.students.forEach(s=>{attMarks[s.id]='unmarked'})}renderAttList()}
+
+function renderAttList(){const el=$('attBody');if(!el)return;
+  let h=`<div class="flex gap-8 mb-14"><button class="btn btn-g flex-1" onclick="markAll('present')">✅ All Present</button><button class="btn btn-d flex-1" onclick="markAll('absent')">❌ All Absent</button></div>`;
+  S.students.forEach(s=>{const st=attMarks[s.id]||'unmarked';
+    h+=`<div class="att-row"><div class="att-name">${s.name}<div class="sub2"><span class="tag tag-pur">${getCR(s.classroomId)}</span></div></div>
+    <button class="att-btn ${st==='present'?'present':st==='absent'?'absent':'unmarked'}" onclick="toggleAtt('${s.id}')">${st==='present'?'✅':st==='absent'?'❌':'—'}</button></div>`});
+  const pC=Object.values(attMarks).filter(v=>v==='present').length,aC=Object.values(attMarks).filter(v=>v==='absent').length;
+  h+=`<div class="score-bar mt-14"><div class="score-card"><div class="score-val" style="color:var(--grn)">${pC}</div><div class="score-lbl">Present</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--red)">${aC}</div><div class="score-lbl">Absent</div></div>
+  <div class="score-card"><div class="score-val">${S.students.length}</div><div class="score-lbl">Total</div></div></div>
+  <div class="fld"><label class="lbl">📝 Remark</label><input class="inp" id="attRemark" placeholder="Note for today..."></div>
+  <button class="btn btn-p btn-w" onclick="saveAtt()">💾 Mark ${t('attendance')}</button>`;el.innerHTML=h}
+
+function toggleAtt(sid){attMarks[sid]=attMarks[sid]==='present'?'absent':'present';renderAttList()}
+function markAll(st){S.students.forEach(s=>{attMarks[s.id]=st});renderAttList()}
+async function saveAtt(){const records=S.students.map(s=>({studentId:s.id,studentName:s.name,status:attMarks[s.id]||'unmarked'}));const remark=$('attRemark')?.value?.trim()||'';
+  const ex=await db.collection('attendance').where('teacherId','==',S.uid).where('date','==',attDate).get();
+  if(!ex.empty){const b=db.batch();ex.docs.forEach(d=>b.delete(d.ref));await b.commit()}
+  const now=new Date();await db.collection('attendance').add({teacherId:S.uid,teacherName:S.uname,signedBy:S.uname,signedAt:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+    date:attDate,remark,classroomIds:S.tData?.classroomIds||[],records,presentCount:records.filter(r=>r.status==='present').length,absentCount:records.filter(r=>r.status==='absent').length,totalCount:records.length,timestamp:Date.now()});
+  toast(t('saved'));confetti()}
+
+// Teacher Quiz Groups
+function rTQuiz(){let h=`<div class="topbar"><div class="h2">🎮 ${t('quizGroups')}</div><button class="btn btn-p btn-sm" onclick="showAQ()">+ ${t('add')}</button></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpQuiz')}</div></div>
+  <div id="qgL"><div class="loading"><div class="loader"></div></div></div>`;app.innerHTML=h;setTimeout(ldQG,0)}
+async function ldQG(){const s=await db.collection('quizGroups').where('teacherId','==',S.uid).get();const el=$('qgL');if(!el)return;
+  if(s.empty){el.innerHTML='<div class="empty"><p>Auto random mode</p></div>';return}
+  let h='';s.docs.forEach(d=>{const g=d.data();h+=`<div class="list-item"><span style="font-size:20px">🎮</span><div class="flex-1"><div class="h3">${g.name}</div></div>
+  <button class="btn-icon" style="background:var(--red)" onclick="delQG('${d.id}')">🗑</button></div>`});el.innerHTML=h}
+async function delQG(id){await db.collection('quizGroups').doc(id).delete();rTQuiz()}
+function showAQ(){let opts=S.cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">🎮 ${t('add')}</div>
+  <div class="fld"><label class="lbl">${t('name')}</label><input class="inp" id="qgN"></div>
+  <div class="fld"><label class="lbl">${t('categories')}</label><select class="inp" id="qgC" onchange="ldQGC()">${opts}</select></div>
+  <div class="fld" id="qgCL"></div>
+  <button class="btn btn-p btn-w" onclick="svQG()">💾 ${t('save')}</button></div>`;setTimeout(ldQGC,0)}
+async function ldQGC(){const s=await db.collection('cards').where('categoryId','==',$('qgC').value).get();let h='';
+  if(s.size<4)h='<p class="sub2" style="color:var(--red)">Need 4+ cards</p>';
+  else s.docs.forEach(d=>{const c=d.data();h+=`<label class="flex items-center gap-8" style="padding:6px 0;border-bottom:1px solid var(--brd);font-size:12px;cursor:pointer"><input type="checkbox" class="qx" value="${d.id}" style="width:16px;height:16px"><b>${c.gurmukhi}</b> — ${c.english}</label>`});
+  $('qgCL').innerHTML=h}
+async function svQG(){const n=$('qgN').value.trim(),ids=[...document.querySelectorAll('.qx:checked')].map(c=>c.value);
+  if(ids.length!==4||!n)return toast('4 cards + name','err');
+  await db.collection('quizGroups').add({name:n,categoryId:$('qgC').value,cardIds:ids,teacherId:S.uid,createdAt:Date.now()});toast(t('created'));rTQuiz()}
+
+// Teacher Profile
+function rTProfile(){app.innerHTML=`<div class="topbar"><div class="h2">👤 ${t('profile')}</div></div>
+  <div style="text-align:center;margin-bottom:16px"><div class="avatar av-blu" style="width:64px;height:64px;font-size:28px;border-radius:20px;margin:0 auto">${(S.uname||'T')[0]}</div>
+  <div class="h2" style="margin-top:10px">${S.uname}</div><div class="sub">${(S.tData?.classroomIds||[]).map(id=>getCR(id)).join(', ')||''}</div></div>
+  <div class="panel"><div style="font-size:13px;line-height:2.2">📱 ${S.tData?.phone||'—'}<br>📧 ${S.tData?.email||'—'}<br>🎂 ${fmtDob(S.tData?.dob)}</div></div>
+  <button class="btn btn-d btn-w" onclick="doLogout()">🚪 ${t('logout')}</button>`}
+
+// ====================== STUDENT ======================
+function rStudent(){
+  showNav([{id:'home',ico:'🏠',label:t('home')},{id:'practice',ico:'📚',label:t('practice')},{id:'games',ico:'🕹️',label:t('games')},{id:'quiz',ico:'🎮',label:t('quiz')},{id:'profile',ico:'👤',label:t('profile'),badge:S.unread||0}]);
+  if(S.tab==='home')rSHome();else if(S.tab==='practice')rSPractice();else if(S.tab==='games')rSGames();
+  else if(S.tab==='quiz')rSQuizList();else if(S.tab==='profile')rSProfile();
+  else if(S.view==='flashview')rSFlash();else if(S.view==='quizplay')rSQuizPlay();else if(S.view==='messages')rSMsg();else if(S.view==='badges')rSBadges()}
+
+async function rSHome(){
+  const sD=await db.collection('students').doc(S.uid).get();const sd=sD.data()||{};const xi=xpInfo(sd.xp||0);const streak=sd.streak||0;
+  let h=`<div class="topbar"><div class="topbar-left"><div class="topbar-avatar" style="background:linear-gradient(135deg,var(--grn),var(--cyan))">${S.logo?'<img src="'+S.logo+'">':(S.uname||'S')[0]}</div>
+  <div class="topbar-info"><div class="name">${S.uname} 👋</div><div class="greeting"><span class="tag tag-pur">${getCR(sd.classroomId)}</span></div></div></div>
+  <div class="topbar-actions">${langSel()}</div></div>`;
+
+  h+=`<div class="xp-bar"><div class="xp-top"><div class="xp-level">⭐ Lv.${xi.level} ${xi.name}</div><div class="xp-pts">${sd.xp||0} XP</div></div>
+  <div class="xp-track"><div class="xp-fill" style="width:${xi.progress}%"></div></div></div>`;
+  if(streak>0)h+=`<div class="streak"><span style="font-size:28px">🔥</span><div><div class="streak-num">${streak}</div><div class="streak-lbl">${t('days')} ${t('streak').toLowerCase()}</div></div></div>`;
+  if(S.welcomeMsg)h+=`<div class="welcome">📝 ${S.welcomeMsg}</div>`;
+  h+='<div id="wodArea"></div>';
+
+  h+=`<div class="dash-grid">
+    <div class="dash-card dc-green" onclick="S.tab='practice';R()"><div class="dc-icon">📚</div><div class="dc-title">${t('practice')}</div><div class="dc-sub">${t('cards')}</div></div>
+    <div class="dash-card dc-purple" onclick="S.tab='games';R()"><div class="dc-icon">🕹️</div><div class="dc-title">${t('games')}</div><div class="dc-sub">Speed & Random</div></div>
+    <div class="dash-card dc-blue" onclick="S.tab='quiz';R()"><div class="dc-icon">🎮</div><div class="dc-title">${t('quiz')}</div><div class="dc-sub">Test yourself</div></div>
+    <div class="dash-card dc-orange" onclick="S.view='messages';R()"><div class="dc-icon">💬</div><div class="dc-title">${t('messages')}</div><div class="dc-sub">${S.unread?S.unread+' new':'Chat'}</div></div>
+    <div class="dash-card dc-pink dc-wide" onclick="S.view='badges';R()"><div class="dc-icon">🏅</div><div class="dc-title">${t('badges')}</div><div class="dc-sub">${(sd.badges||[]).length}/${BADGES.length} earned</div></div>
+  </div>`;app.innerHTML=h;loadSWod()}
+
+async function loadSWod(){const today=new Date().toISOString().split('T')[0];
+  const s=await db.collection('wordOfDay').where('teacherId','==',S.teacherId).where('date','==',today).get();
+  const el=$('wodArea');if(!el||s.empty)return;const w=s.docs[0].data();
+  el.innerHTML=`<div class="wod-card" onclick="revWod(this)"><div class="wod-lbl">✨ ${t('wordOfDay')}</div><div style="font-size:48px;margin:8px 0">👆</div>
+  <div style="font-size:16px;font-weight:700">${t('tapMeWod')}</div>
+  <div id="wH" style="display:none" data-a="${w.audioUrl||''}" data-i="${w.imageUrl||''}" data-g="${w.gurmukhi}" data-e="${w.english}"></div></div>`}
+function revWod(el){const d=$('wH');if(!d)return;const au=d.dataset.a,im=d.dataset.i,g=d.dataset.g,e=d.dataset.e;
+  if(au)playA(au);el.onclick=null;
+  el.innerHTML=`<div class="wod-lbl">✨ ${t('wordOfDay')}</div>
+  ${im?'<img class="wod-img" src="'+im+'">':''}<div class="wod-gur">${g}</div><div class="wod-eng">${e}</div>
+  ${au?'<button class="audio-btn" onclick="event.stopPropagation();playA(\''+au+'\')" style="width:48px;height:48px;font-size:20px;margin-top:10px">🔊</button>':''}`}
+
+// Student Practice
+function rSPractice(){let h=`<div class="topbar"><div class="h2">📚 ${t('practice')}</div></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpPractice')}</div></div>`;
+  if(!S.cats.length)h+='<div class="empty"><p>'+t('noContent')+'</p></div>';
+  else{h+='<div class="card-grid">';S.cats.forEach(c=>{const colors=['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899','#06B6D4'];const ci=S.cats.indexOf(c);
+    h+=`<div class="flash-card" onclick="stPrac('${c.id}','${esc(c.name)}')"><div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,${colors[ci%6]},${colors[(ci+1)%6]});display:flex;align-items:center;justify-content:center;font-size:40px">${c.emoji||'📚'}</div>
+    <div class="fc-label"><div class="fc-gur">${c.gurmukhi||c.name}</div><div class="fc-eng">${c.name}</div></div></div>`});h+='</div>'}
+  app.innerHTML=h}
+
+async function stPrac(cid,cn){app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldCards(cid);if(!S.cards.length){toast(t('noContent'),'err');S.tab='practice';R();return}
+  S.flashCards=shuf(S.cards);S.flashIdx=0;S.flashRev=false;S.view='flashview';S.pS=Date.now();S.pC=cn;S.pV=0;rSFlash()}
+
+function rSFlash(){hideNav();const c=S.flashCards[S.flashIdx];if(!c){endP();return}
+  let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="endP()">✕</button><div class="sub">${S.flashIdx+1}/${S.flashCards.length}</div></div>
+  <div class="viewer">${c.imageUrl?'<img class="viewer-img" src="'+c.imageUrl+'">':'<div class="viewer-img" style="display:flex;align-items:center;justify-content:center;font-size:50px">🖼</div>'}
+  <div class="viewer-body">`;
+  if(S.flashRev){h+=`<div class="viewer-gur">${c.gurmukhi}</div><div class="viewer-eng">${c.english}</div>`;
+    if(c.audioUrl)h+='<div style="margin-top:12px"><button class="audio-btn" onclick="playA(\''+c.audioUrl+'\')">🔊</button></div>';
+    if(c.imageUrl2||c.imageUrl3){h+='<div class="extra-imgs">';if(c.imageUrl2)h+='<img src="'+c.imageUrl2+'">';if(c.imageUrl3)h+='<img src="'+c.imageUrl3+'">';h+='</div>'}}
+  else h+='<div class="viewer-gur viewer-blur">ਅੱਖਰ</div>';
+  h+='</div></div>';
+  if(!S.flashRev)h+=`<button class="btn btn-p btn-w" onclick="S.flashRev=true;S.pV++;rSFlash()">👀 ${t('reveal')}</button>`;
+  else{h+='<div class="flex gap-8">';if(S.flashIdx>0)h+=`<button class="btn btn-s flex-1" onclick="S.flashIdx--;S.flashRev=false;rSFlash()">← ${t('prev')}</button>`;
+    h+=S.flashIdx<S.flashCards.length-1?`<button class="btn btn-p flex-1" onclick="S.flashIdx++;S.flashRev=false;rSFlash()">${t('next')} →</button>`:`<button class="btn btn-g flex-1" onclick="endP()">✅</button>`;h+='</div>'}
+  app.innerHTML=h}
+async function endP(){const tm=Math.round((Date.now()-S.pS)/1000);await recAct('practice',{categoryName:S.pC,cardsViewed:S.pV,timeSpent:tm});
+  await addXP(S.uid,S.pV*5);await updStreak(S.uid);S.view='home';S.tab='home';await ldCats(S.teacherId);R()}
+
+// Student Games
+function rSGames(){let h=`<div class="topbar"><div class="h2">🕹️ ${t('games')}</div></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpGames')}</div></div>
+  <button class="game-btn" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)" onclick="stSpd()">⚡ ${t('speedRound')}<span class="g-sub">60 sec challenge</span></button>
+  <button class="game-btn" style="background:linear-gradient(135deg,#F59E0B,#EF4444)" onclick="startRW()">🎲 ${t('randomWord')}<span class="g-sub">Guess from picture</span></button>`;
+  app.innerHTML=h}
+
+// Random Word
+let rndT=null;
+async function startRW(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl&&c.audioUrl);if(!wb.length){toast(t('noContent'),'err');S.tab='games';R();return}
+  const c=wb[Math.floor(Math.random()*wb.length)];S.rndC=c;
+  app.innerHTML=`<button class="back" onclick="clearInterval(rndT);S.tab='games';R()">← ${t('back')}</button>
+  <div class="text-center"><div class="sub" style="letter-spacing:2px;margin-bottom:12px">🎲 ${t('randomWord').toUpperCase()}</div>
+  <img src="${c.imageUrl}" style="width:200px;height:200px;border-radius:20px;object-fit:cover;border:3px solid rgba(245,166,35,.3)">
+  <div id="rTA" style="margin-top:16px"><div style="position:relative;width:70px;height:70px;margin:0 auto">
+    <svg width="70" height="70" style="transform:rotate(-90deg)"><circle cx="35" cy="35" r="30" fill="none" stroke="var(--card2)" stroke-width="5"/>
+    <circle id="rC" cx="35" cy="35" r="30" fill="none" stroke="var(--saf)" stroke-width="5" stroke-dasharray="189" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear"/></svg>
+    <div id="rS" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:900;color:var(--saf)">10</div></div></div>
+  <div id="rRv" style="display:none;margin-top:16px">
+    <button class="audio-btn" onclick="playA('${c.audioUrl}')" style="margin-bottom:10px">🔊</button>
+    <div class="wod-gur">${c.gurmukhi}</div><div class="wod-eng">${c.english}</div>
+    <div class="flex gap-8 mt-14" style="justify-content:center"><button class="btn btn-s" onclick="clearInterval(rndT);S.tab='games';R()">🏠</button>
+    <button class="btn btn-p" onclick="clearInterval(rndT);startRW()">🎲 ${t('next')}</button></div></div></div>`;
+  let sec=10;rndT=setInterval(()=>{sec--;const el=$('rS'),ci=$('rC');if(el)el.textContent=sec;if(ci)ci.style.strokeDashoffset=((10-sec)/10)*189;
+    if(sec<=0){clearInterval(rndT);const ta=$('rTA'),rv=$('rRv');if(ta)ta.style.display='none';if(rv)rv.style.display='block';playA(S.rndC.audioUrl)}},1000)}
+
+// Speed Round
+let spdT=null,spdSec=60,spdScore=0,spdCards=[];
+async function stSpd(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl&&c.audioUrl);if(wb.length<4){toast('Need 4+','err');S.tab='games';R();return}
+  spdCards=shuf(wb);spdSec=60;spdScore=0;rSpd();spdT=setInterval(()=>{spdSec--;const el=$('spdTime');if(el)el.textContent=spdSec;if(spdSec<=0){clearInterval(spdT);endSpd()}},1000)}
+function rSpd(){if(spdCards.length<4){spdCards=shuf(S.cards.filter(c=>c.imageUrl&&c.audioUrl));if(spdCards.length<4){endSpd();return}}
+  const pick=spdCards.splice(0,4);const cor=pick[Math.floor(Math.random()*4)];const sh=shuf(pick);
+  app.innerHTML=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="clearInterval(spdT);S.tab='games';R()">✕</button>
+  <div style="font-size:20px;font-weight:900;color:var(--red)" id="spdTime">${spdSec}</div>
+  <div style="font-size:18px;font-weight:900;color:var(--saf)">⭐${spdScore}</div></div>
+  <div class="text-center mb-14"><button class="audio-btn" onclick="playA('${cor.audioUrl}')">🔊</button></div>
+  <div class="quiz-grid">${sh.map(c=>`<div class="quiz-opt" id="sp_${c.id}" onclick="spdAns('${c.id}','${cor.id}')"><img src="${c.imageUrl}"></div>`).join('')}</div>`;
+  playA(cor.audioUrl)}
+function spdAns(cid,corId){$('sp_'+cid).classList.add(cid===corId?'ok':'no');if(cid!==corId)$('sp_'+corId)?.classList.add('ok');
+  if(cid===corId){spdScore++;flash('ok')}else flash('no');setTimeout(()=>{if(spdSec>0)rSpd();else endSpd()},500)}
+async function endSpd(){clearInterval(spdT);await recAct('quiz_complete',{categoryName:'Speed',score:spdScore,total:spdScore+5,timeSpent:60});
+  await addXP(S.uid,spdScore*10);await updStreak(S.uid);if(spdScore>=10)confetti();
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:64px">⚡</div><div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${spdScore}</div>
+  <div class="sub">+${spdScore*10} XP</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stSpd()">🔄</button></div>`}
+
+// Student Quiz
+function rSQuizList(){let h=`<div class="topbar"><div class="h2">🎮 ${t('quiz')}</div></div>`;
+  if(!S.cats.length)h+='<div class="empty"><p>'+t('noContent')+'</p></div>';
+  else{h+='<div class="card-grid">';S.cats.forEach((c,i)=>{const colors=['#EF4444','#F59E0B','#2ECC71','#3B82F6','#8B5CF6','#EC4899'];
+    h+=`<div class="flash-card" onclick="stQuiz('${c.id}','${esc(c.name)}')"><div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,${colors[i%6]+'99'},${colors[i%6]});display:flex;align-items:center;justify-content:center;font-size:40px">🎮</div>
+    <div class="fc-label"><div class="fc-gur">${c.gurmukhi||c.name}</div><div class="fc-eng">${c.name}</div></div></div>`});h+='</div>'}
+  app.innerHTML=h}
+
+async function stQuiz(cid,cn){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  const qgS=await db.collection('quizGroups').where('categoryId','==',cid).get();const groups=qgS.docs.map(d=>({id:d.id,...d.data()}));
+  await ldCards(cid);if(S.cards.length<4){toast('Need 4+','err');S.tab='quiz';R();return}
+  let rounds=[];for(const g of groups){const gc=g.cardIds.map(id=>S.cards.find(c=>c.id===id)).filter(Boolean);if(gc.length===4){const cor=gc[Math.floor(Math.random()*4)];rounds.push({cards:shuf(gc),cId:cor.id,aUrl:cor.audioUrl})}}
+  let att=0;while(rounds.length<5&&att<50){att++;const pk=shuf(S.cards).slice(0,4);if(pk.length<4||!pk.every(c=>c.imageUrl))continue;const wa=pk.filter(c=>c.audioUrl);if(!wa.length)continue;
+    const cor=wa[Math.floor(Math.random()*wa.length)];rounds.push({cards:shuf(pk),cId:cor.id,aUrl:cor.audioUrl})}
+  if(!rounds.length){toast(t('noContent'),'err');S.tab='quiz';R();return}
+  S.qCards=shuf(rounds);S.qIdx=0;S.qScore=0;S.qTotal=S.qCards.length;S.qStart=Date.now();S.qAns=false;S.qCat=cn;S.view='quizplay';rSQuizPlay()}
+
+function rSQuizPlay(){if(S.qIdx>=S.qCards.length){showQR();return}const r=S.qCards[S.qIdx];
+  app.innerHTML=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="S.view='home';S.tab='quiz';R()">✕</button>
+  <div class="sub">${S.qIdx+1}/${S.qTotal}</div><div style="font-size:16px;font-weight:900;color:var(--saf)">⭐${S.qScore}</div></div>
+  <div class="text-center mb-14"><div class="sub mb-8">${t('listenTap')}</div>
+  <button class="audio-btn" onclick="playA('${r.aUrl}')">🔊</button></div>
+  <div class="quiz-grid">${r.cards.map(c=>`<div class="quiz-opt" id="q_${c.id}" onclick="ansQ('${c.id}')"><img src="${c.imageUrl}"></div>`).join('')}</div>`}
+
+function ansQ(cid){if(S.qAns)return;S.qAns=true;const r=S.qCards[S.qIdx],ok=cid===r.cId;
+  $('q_'+cid).classList.add(ok?'ok':'no');if(!ok)$('q_'+r.cId)?.classList.add('ok');
+  if(ok){S.qScore++;flash('ok')}else flash('no');playA(r.aUrl);
+  const btn=document.createElement('button');btn.className='btn btn-p btn-w';btn.style.marginTop='14px';
+  btn.textContent=S.qIdx<S.qTotal-1?t('next')+' →':'🎉';btn.onclick=()=>{S.qIdx++;S.qAns=false;S.qIdx>=S.qCards.length?showQR():rSQuizPlay()};app.querySelector('.quiz-grid').after(btn)}
+function flash(ty){const o=document.createElement('div');o.className='flash-ov '+ty;o.innerHTML='<span>'+(ty==='ok'?'✅':'❌')+'</span>';document.body.appendChild(o);setTimeout(()=>o.remove(),500)}
+
+async function showQR(){const tm=Math.round((Date.now()-S.qStart)/1000),pct=Math.round(S.qScore/S.qTotal*100);
+  let em;if(pct>=90)em='🏆';else if(pct>=70)em='🌟';else if(pct>=50)em='💪';else em='📚';
+  await recAct('quiz_complete',{categoryName:S.qCat,score:S.qScore,total:S.qTotal,timeSpent:tm});
+  const xpE=S.qScore*15+(pct===100?50:0);await addXP(S.uid,xpE);await updStreak(S.uid);if(pct===100)confetti();await chkBadges(S.uid);
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:72px">${em}</div>
+  <div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${S.qScore}/${S.qTotal}</div>
+  <div class="sub">${pct}% · +${xpE} XP</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='home';R()">🏠</button>
+  <button class="btn btn-p flex-1" onclick="stQuiz('${S.cards[0]?.categoryId}','${esc(S.qCat)}')">🔄</button></div>`}
+
+// Student Badges
+async function rSBadges(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';const earned=await chkBadges(S.uid);
+  let h=`<button class="back" onclick="S.view='home';S.tab='home';R()">← ${t('back')}</button>
+  <div class="panel"><div class="panel-title">🏅 ${t('badges')} (${earned.length}/${BADGES.length})</div>
+  <div class="badge-grid">`;BADGES.forEach(b=>{h+=`<div class="badge ${earned.includes(b.id)?'earned':''}"><div class="b-ico">${b.ico}</div><div class="b-name">${b.name}</div></div>`});
+  h+='</div></div>';app.innerHTML=h}
+
+// Student Messages
+async function rSMsg(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  await markRd(S.uid,'teacher');await markRd(S.uid,S.teacherId);await markRd(S.uid,'admin');S.unread=0;
+  const m1=await getMsgs(S.uid,S.teacherId);const m2=await getMsgs(S.uid,'admin');const m3=await getMsgs(S.uid,'teacher');
+  const msgs=[...m1,...m2,...m3].filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i);msgs.sort((a,b)=>a.timestamp-b.timestamp);
+  let h=`<button class="back" onclick="S.view='home';S.tab='home';R()">← ${t('back')}</button><div class="panel"><div class="panel-title">💬 ${t('messages')}</div><div class="msg-list" id="mL">`;
+  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';
+  else msgs.forEach(m=>{const s=m.fromId===S.uid;h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}<div class="msg-time">${fmt(m.timestamp)}</div></div>`});
+  h+=`</div><div class="msg-compose"><input class="inp" id="mI" placeholder="..." onkeydown="if(event.key==='Enter')sndSM()"><button class="btn btn-p btn-sm" onclick="sndSM()">${t('send')}</button></div></div>`;
+  app.innerHTML=h;const l=$('mL');if(l)l.scrollTop=l.scrollHeight}
+async function sndSM(){const x=$('mI').value.trim();if(!x)return;$('mI').value='';await sendMsg(S.uid,S.uname,'student',S.teacherId,'Teacher',x);rSMsg()}
+
+// Student Profile
+async function rSProfile(){const sD=await db.collection('students').doc(S.uid).get();const sd=sD.data()||{};const xi=xpInfo(sd.xp||0);
+  app.innerHTML=`<div class="topbar"><div class="h2">👤 ${t('profile')}</div></div>
+  <div class="text-center mb-14"><div class="avatar av-grn" style="width:64px;height:64px;font-size:28px;border-radius:20px;margin:0 auto">${(S.uname||'S')[0]}</div>
+  <div class="h2" style="margin-top:10px">${S.uname}</div><div class="sub"><span class="tag tag-pur">${getCR(sd.classroomId)}</span></div></div>
+  <div class="xp-bar"><div class="xp-top"><div class="xp-level">⭐ Lv.${xi.level} ${xi.name}</div><div class="xp-pts">${sd.xp||0} XP</div></div>
+  <div class="xp-track"><div class="xp-fill" style="width:${xi.progress}%"></div></div></div>
+  <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">🔥${sd.streak||0}</div><div class="score-lbl">${t('streak')}</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--pur)">${(sd.badges||[]).length}</div><div class="score-lbl">${t('badges')}</div></div></div>
+  <button class="btn btn-d btn-w" onclick="doLogout()">🚪 ${t('logout')}</button>`}
+
+// ============ INIT ============
+async function init(){try{await ldSet();await ldCR();await db.collection('categories').limit(1).get();
+  const params=new URLSearchParams(window.location.search);const urlRole=params.get('role');
+  if(urlRole&&['admin','teacher','student'].includes(urlRole)){lP(urlRole)}else{R()}
+}catch(e){app.innerHTML='<div style="text-align:center;padding:60px 20px"><h2 style="color:var(--txt)">Error</h2><p style="color:var(--txt3);margin-top:8px">'+e.message+'</p></div>'}}
+init();
+
+</script>
+</body>
+</html>

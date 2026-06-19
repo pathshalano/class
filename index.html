@@ -20,16 +20,12 @@
   </div>
 </div>
 <div class="bnav" id="bnav"><div class="bnav-inner" id="bnavInner"></div></div>
-
 <script>
-if(typeof firebase==='undefined'){
-  document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">⚠️</div><h2 style="color:#F8FAFC">Firebase not loaded</h2></div>';
-}
+if(typeof firebase==='undefined'){document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">⚠️</div><h2 style="color:#F8FAFC">Firebase not loaded</h2></div>';}
 window._loaded={};
 window._onFileLoad=function(n){window._loaded[n]=true;var e=document.getElementById('loadStatus');if(e)e.textContent='Loaded: '+Object.keys(window._loaded).join(', ')};
-window._onFileError=function(n){document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">❌</div><h2 style="color:#F8FAFC">Failed: '+n+'</h2><p style="color:#64748B;font-size:13px">File missing: <b>'+n+'.js</b></p></div>'};
+window._onFileError=function(n){document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">❌</div><h2 style="color:#F8FAFC">Failed: '+n+'.js</h2><p style="color:#64748B">File missing from repo root</p></div>'};
 </script>
-
 <script src="app.js" onload="_onFileLoad('app')" onerror="_onFileError('app')"></script>
 <script src="admin.js" onload="_onFileLoad('admin')" onerror="_onFileError('admin')"></script>
 <script src="teacher.js" onload="_onFileLoad('teacher')" onerror="_onFileError('teacher')"></script>

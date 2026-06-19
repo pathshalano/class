@@ -138,12 +138,11 @@ async function doLogin(role){const btn=$('lB');btn.disabled=true;btn.textContent
 
 // ============ INIT ============
 async function init(){
-  // Enable offline persistence for faster subsequent loads
-  try{await db.enablePersistence({synchronizeTabs:true})}catch(e){}
-  // Show login screen IMMEDIATELY - don't wait for data
-  const params=new URLSearchParams(window.location.search);const urlRole=params.get('role');
-  if(urlRole&&['admin','teacher','student'].includes(urlRole)){lP(urlRole)}else{R()}
-  // Load settings in background (logo, welcome msg)
-  ldSet().then(()=>{if(!S.role)R()}).catch(()=>{})
+  try{db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
+  try{
+    const params=new URLSearchParams(window.location.search);const urlRole=params.get('role');
+    if(urlRole&&['admin','teacher','student'].includes(urlRole)){lP(urlRole)}else{R()}
+    ldSet().then(()=>{if(!S.role)R()}).catch(()=>{})
+  }catch(e){app.innerHTML='<div style="text-align:center;padding:60px"><p style="color:#E74C3C">'+e.message+'</p></div>'}
 }
-init();
+// init() is called from student.js after all files are loaded

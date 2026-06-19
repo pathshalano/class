@@ -183,3 +183,6 @@ async function rSProfile(){const sD=await db.collection('students').doc(S.uid).g
   <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">🔥${sd.streak||0}</div><div class="score-lbl">${t('streak')}</div></div>
   <div class="score-card"><div class="score-val" style="color:var(--pur)">${(sd.badges||[]).length}</div><div class="score-lbl">${t('badges')}</div></div></div>
   <button class="btn btn-d btn-w" onclick="doLogout()">🚪 ${t('logout')}</button>`}
+
+// ============ START APP (all files loaded) ============
+init();

@@ -9,18 +9,39 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-<div class="app" id="app"><div class="loading"><div class="loader"></div><p>Loading ਪੰਜਾਬੀ ਸਿੱਖੋ...</p></div></div>
+<div class="app" id="app">
+  <div class="loading">
+    <div class="loader"></div>
+    <p>Loading ਪੰਜਾਬੀ ਸਿੱਖੋ...</p>
+    <p id="loadStatus" style="font-size:11px;color:#64748B;margin-top:8px"></p>
+  </div>
+</div>
 <div class="bnav" id="bnav"><div class="bnav-inner" id="bnavInner"></div></div>
 
 <script>
-if(typeof firebase==='undefined'){document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">⚠️</div><h2 style="color:#F8FAFC;margin:12px 0">Push to GitHub Pages</h2></div>';throw new Error('No Firebase')}
+// Check Firebase loaded
+if(typeof firebase==='undefined'){
+  document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">⚠️</div><h2 style="color:#F8FAFC;margin:12px 0">Firebase not loaded</h2><p style="color:#64748B">Check your internet connection</p></div>';
+}
+
+// Track which files loaded
+window._loaded = {};
+window._onFileLoad = function(name) {
+  window._loaded[name] = true;
+  var el = document.getElementById('loadStatus');
+  if(el) el.textContent = 'Loaded: ' + Object.keys(window._loaded).join(', ');
+};
+window._onFileError = function(name) {
+  document.getElementById('app').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">❌</div><h2 style="color:#F8FAFC;margin:12px 0">Failed to load: ' + name + '</h2><p style="color:#64748B;font-size:13px">Make sure the file exists at: <b>./js/' + name + '.js</b><br><br>Your repo should have this structure:<br><code style="color:#F5A623">index.html<br>css/style.css<br>js/app.js<br>js/admin.js<br>js/teacher.js<br>js/student.js</code></p></div>';
+};
 </script>
-<script src="js/app.js"></script>
-<script src="js/admin.js"></script>
-<script src="js/teacher.js"></script>
-<script src="js/student.js"></script>
+
+<script src="./js/app.js" onload="_onFileLoad('app')" onerror="_onFileError('app')"></script>
+<script src="./js/admin.js" onload="_onFileLoad('admin')" onerror="_onFileError('admin')"></script>
+<script src="./js/teacher.js" onload="_onFileLoad('teacher')" onerror="_onFileError('teacher')"></script>
+<script src="./js/student.js" onload="_onFileLoad('student')" onerror="_onFileError('student')"></script>
 </body>
 </html>

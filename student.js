@@ -3,7 +3,7 @@ function rStudent(){
   showNav([{id:'home',ico:'🏠',label:t('home')},{id:'practice',ico:'📚',label:t('practice')},{id:'games',ico:'🕹️',label:t('games')},{id:'quiz',ico:'🎮',label:t('quiz')},{id:'profile',ico:'👤',label:t('profile'),badge:S.unread||0}]);
   if(S.tab==='home')rSHome();else if(S.tab==='practice')rSPractice();else if(S.tab==='games')rSGames();
   else if(S.tab==='quiz')rSQuizList();else if(S.tab==='profile')rSProfile();
-  else if(S.view==='flashview')rSFlash();else if(S.view==='quizplay')rSQuizPlay();else if(S.view==='messages')rSMsg();else if(S.view==='badges')rSBadges()}
+  else if(S.view==='flashview')rSFlash();else if(S.view==='quizplay')rSQuizPlay();else if(S.view==='messages')rSMsg();else if(S.view==='badges')rSBadges();else if(S.view==='memgame')rMemBoard()}
 
 async function rSHome(){
   const sD=await db.collection('students').doc(S.uid).get();const sd=sD.data()||{};const xi=xpInfo(sd.xp||0);const streak=sd.streak||0;
@@ -69,7 +69,8 @@ async function endP(){const tm=Math.round((Date.now()-S.pS)/1000);await recAct('
 function rSGames(){let h=`<div class="topbar"><div class="h2">🕹️ ${t('games')}</div></div>
   <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpGames')}</div></div>
   <button class="game-btn" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)" onclick="stSpd()">⚡ ${t('speedRound')}<span class="g-sub">60 sec challenge</span></button>
-  <button class="game-btn" style="background:linear-gradient(135deg,#F59E0B,#EF4444)" onclick="startRW()">🎲 ${t('randomWord')}<span class="g-sub">Guess from picture</span></button>`;
+  <button class="game-btn" style="background:linear-gradient(135deg,#F59E0B,#EF4444)" onclick="startRW()">🎲 ${t('randomWord')}<span class="g-sub">Guess from picture</span></button>
+  <button class="game-btn" style="background:linear-gradient(135deg,#2ECC71,#06B6D4)" onclick="stMem()">🧠 ${t('memoryMatch')}<span class="g-sub">Flip & find pairs</span></button>`;
   app.innerHTML=h}
 
 // Random Word
@@ -112,6 +113,105 @@ async function endSpd(){clearInterval(spdT);await recAct('quiz_complete',{catego
   app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:64px">⚡</div><div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${spdScore}</div>
   <div class="sub">+${spdScore*10} XP</div></div>
   <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stSpd()">🔄</button></div>`}
+
+// Memory Match Game
+let memTiles=[],memFlipped=[],memMatched=0,memMoves=0,memLocked=false,memStart=0,memTotal=0,memTimer=null;
+async function stMem(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl);if(wb.length<6){toast('Need 6+ cards with images','err');S.tab='games';R();return}
+  const pick=shuf(wb).slice(0,6);
+  // Create pairs: each card becomes 2 tiles — one image tile, one gurmukhi tile
+  let tiles=[];pick.forEach((c,i)=>{
+    tiles.push({id:'img_'+i,pairId:i,type:'image',imageUrl:c.imageUrl,audioUrl:c.audioUrl||'',gurmukhi:c.gurmukhi,english:c.english});
+    tiles.push({id:'txt_'+i,pairId:i,type:'text',imageUrl:c.imageUrl,audioUrl:c.audioUrl||'',gurmukhi:c.gurmukhi,english:c.english})});
+  memTiles=shuf(tiles);memFlipped=[];memMatched=0;memMoves=0;memLocked=false;memTotal=pick.length;memStart=Date.now();
+  S.view='memgame';rMemBoard();
+  // Start timer
+  if(memTimer)clearInterval(memTimer);memTimer=setInterval(()=>{const el=$('memTime');if(el)el.textContent=memTimeFmt()},1000)}
+
+function memTimeFmt(){return Math.floor((Date.now()-memStart)/1000)+'s'}
+
+function rMemBoard(){hideNav();
+  let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="clearInterval(memTimer);S.view='home';S.tab='games';R()">✕</button>
+  <div class="sub">🧠 ${t('memoryMatch')}</div>
+  <div class="flex gap-8 items-center"><span class="sub2" id="memTime">${memTimeFmt()}</span><span style="font-size:14px;font-weight:800;color:var(--saf)">👆${memMoves}</span></div></div>
+  <div class="mem-grid">`;
+  memTiles.forEach((tile,i)=>{
+    const isFlipped=memFlipped.includes(i);
+    const isMatched=tile.matched;
+    let cls='mem-tile';
+    if(isFlipped||isMatched)cls+=' mem-flipped';
+    if(isMatched)cls+=' mem-matched';
+    h+=`<div class="${cls}" onclick="memFlip(${i})"><div class="mem-tile-inner">
+      <div class="mem-face mem-back">❓</div>
+      <div class="mem-face mem-front">${tile.type==='image'
+        ?'<img src="'+tile.imageUrl+'" alt="">'
+        :'<div class="mem-txt"><div class="mem-gur">'+tile.gurmukhi+'</div><div class="mem-eng">'+tile.english+'</div></div>'
+      }</div></div></div>`});
+  h+='</div>';
+  // Progress dots
+  h+='<div class="mem-progress">';
+  for(let i=0;i<memTotal;i++){h+=`<div class="mem-dot ${i<memMatched?'mem-dot-done':''}"></div>`}
+  h+='</div>';
+  app.innerHTML=h}
+
+function memFlip(i){
+  if(memLocked)return;
+  if(memFlipped.includes(i))return;
+  if(memTiles[i].matched)return;
+  memFlipped.push(i);
+  // Flip animation
+  const tiles=document.querySelectorAll('.mem-tile');
+  if(tiles[i])tiles[i].classList.add('mem-flipped');
+  // Play audio on flip if available
+  if(memTiles[i].audioUrl&&memTiles[i].type==='text')playA(memTiles[i].audioUrl);
+  if(memFlipped.length===2){
+    memMoves++;
+    const el=document.querySelector('[style*="color:var(--saf)"]');
+    // Update moves counter
+    const movesEl=app.querySelector('.flex.justify-between span[style]');
+    memLocked=true;
+    const a=memFlipped[0],b=memFlipped[1];
+    if(memTiles[a].pairId===memTiles[b].pairId&&memTiles[a].type!==memTiles[b].type){
+      // Match!
+      memTiles[a].matched=true;memTiles[b].matched=true;memMatched++;
+      setTimeout(()=>{
+        if(tiles[a])tiles[a].classList.add('mem-matched');
+        if(tiles[b])tiles[b].classList.add('mem-matched');
+        flash('ok');
+        if(memTiles[a].audioUrl)playA(memTiles[a].audioUrl);
+        memFlipped=[];memLocked=false;
+        // Update progress dots
+        const dots=document.querySelectorAll('.mem-dot');
+        dots.forEach((d,di)=>{if(di<memMatched)d.classList.add('mem-dot-done')});
+        // Update moves display
+        rMemUpdateHUD();
+        if(memMatched===memTotal)setTimeout(endMem,600)},500)}
+    else{
+      // No match — flip back
+      setTimeout(()=>{
+        if(tiles[a])tiles[a].classList.remove('mem-flipped');
+        if(tiles[b])tiles[b].classList.remove('mem-flipped');
+        flash('no');
+        memFlipped=[];memLocked=false;
+        rMemUpdateHUD()},800)}}}
+
+function rMemUpdateHUD(){const el=$('memTime');if(el)el.textContent=memTimeFmt();
+  // Re-render just the moves count without full redraw
+  const hud=app.querySelector('.flex.justify-between.items-center');
+  if(hud){const sp=hud.querySelectorAll('span');if(sp.length>=2)sp[1].innerHTML='👆'+memMoves}}
+
+async function endMem(){clearInterval(memTimer);memTimer=null;
+  const tm=Math.round((Date.now()-memStart)/1000);
+  const perfect=memMoves===memTotal;const stars=memMoves<=memTotal+2?3:memMoves<=memTotal+5?2:1;
+  const xpE=memTotal*10+(perfect?50:0)+(stars===3?30:stars===2?15:0);
+  await recAct('quiz_complete',{categoryName:'Memory Match',score:memTotal,total:memTotal,timeSpent:tm});
+  await addXP(S.uid,xpE);await updStreak(S.uid);if(perfect)confetti();await chkBadges(S.uid);
+  const starH='⭐'.repeat(stars)+'<span style="opacity:.2">'+'⭐'.repeat(3-stars)+'</span>';
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:72px">🧠</div>
+  <div style="font-size:36px;margin:10px 0">${starH}</div>
+  <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:4px">${memMatched}/${memTotal} pairs · ${memMoves} moves · ${tm}s</div>
+  <div class="sub">+${xpE} XP${perfect?' · PERFECT! 🎉':''}</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stMem()">🔄 Again</button></div>`}
 
 // Student Quiz
 function rSQuizList(){let h=`<div class="topbar"><div class="h2">🎮 ${t('quiz')}</div></div>`;

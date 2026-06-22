@@ -3,7 +3,7 @@ function rStudent(){
   showNav([{id:'home',ico:'🏠',label:t('home')},{id:'practice',ico:'📚',label:t('practice')},{id:'games',ico:'🕹️',label:t('games')},{id:'quiz',ico:'🎮',label:t('quiz')},{id:'profile',ico:'👤',label:t('profile'),badge:S.unread||0}]);
   if(S.tab==='home')rSHome();else if(S.tab==='practice')rSPractice();else if(S.tab==='games')rSGames();
   else if(S.tab==='quiz')rSQuizList();else if(S.tab==='profile')rSProfile();
-  else if(S.view==='flashview')rSFlash();else if(S.view==='quizplay')rSQuizPlay();else if(S.view==='messages')rSMsg();else if(S.view==='badges')rSBadges();else if(S.view==='memgame')rMemBoard()}
+  else if(S.view==='flashview')rSFlash();else if(S.view==='quizplay')rSQuizPlay();else if(S.view==='messages')rSMsg();else if(S.view==='badges')rSBadges();else if(S.view==='memgame')rMemBoard();else if(S.view==='spinwheel')rSpinWheel()}
 
 async function rSHome(){
   const sD=await db.collection('students').doc(S.uid).get();const sd=sD.data()||{};const xi=xpInfo(sd.xp||0);const streak=sd.streak||0;
@@ -70,7 +70,8 @@ function rSGames(){let h=`<div class="topbar"><div class="h2">🕹️ ${t('games
   <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpGames')}</div></div>
   <button class="game-btn" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)" onclick="stSpd()">⚡ ${t('speedRound')}<span class="g-sub">60 sec challenge</span></button>
   <button class="game-btn" style="background:linear-gradient(135deg,#F59E0B,#EF4444)" onclick="startRW()">🎲 ${t('randomWord')}<span class="g-sub">Guess from picture</span></button>
-  <button class="game-btn" style="background:linear-gradient(135deg,#2ECC71,#06B6D4)" onclick="stMem()">🧠 ${t('memoryMatch')}<span class="g-sub">Flip & find pairs</span></button>`;
+  <button class="game-btn" style="background:linear-gradient(135deg,#2ECC71,#06B6D4)" onclick="stMem()">🧠 ${t('memoryMatch')}<span class="g-sub">Flip & find pairs</span></button>
+  <button class="game-btn" style="background:linear-gradient(135deg,#EC4899,#F59E0B)" onclick="stSpin()">🎡 ${t('spinWheel')}<span class="g-sub">Spin & guess the word</span></button>`;
   app.innerHTML=h}
 
 // Random Word
@@ -212,6 +213,101 @@ async function endMem(){clearInterval(memTimer);memTimer=null;
   <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:4px">${memMatched}/${memTotal} pairs · ${memMoves} moves · ${tm}s</div>
   <div class="sub">+${xpE} XP${perfect?' · PERFECT! 🎉':''}</div></div>
   <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stMem()">🔄 Again</button></div>`}
+
+// Spin the Wheel Game
+const SPIN_COLORS=['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899','#06B6D4'];
+let spinCards=[],spinRound=0,spinTotal=5,spinScore=0,spinStart=0,spinBusy=false,spinCurIdx=-1;
+
+async function stSpin(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl&&c.audioUrl);if(wb.length<6){toast('Need 6+ cards with images & audio','err');S.tab='games';R();return}
+  spinCards=shuf(wb).slice(0,6);spinRound=0;spinScore=0;spinStart=Date.now();spinBusy=false;spinCurIdx=-1;
+  S.view='spinwheel';rSpinWheel()}
+
+function rSpinWheel(){hideNav();
+  const seg=spinCards.length;const segAngle=360/seg;
+  // Build conic gradient
+  let grad='conic-gradient(';spinCards.forEach((c,i)=>{const s=i*segAngle,e=(i+1)*segAngle;
+    grad+=SPIN_COLORS[i%SPIN_COLORS.length]+' '+s+'deg '+e+'deg';if(i<seg-1)grad+=','});grad+=')';
+  // Build image positions (polar -> cartesian)
+  let imgs='';const r=75,cx=130,cy=130;
+  spinCards.forEach((c,i)=>{const ang=(i*segAngle+segAngle/2)*Math.PI/180;
+    const x=cx+r*Math.sin(ang)-22,y=cy-r*Math.cos(ang)-22;
+    imgs+=`<img src="${c.imageUrl}" class="spin-img" style="left:${x}px;top:${y}px">`});
+  // Segment lines
+  let lines='';for(let i=0;i<seg;i++){const ang=i*segAngle;
+    lines+=`<div class="spin-line" style="transform:rotate(${ang}deg)"></div>`}
+
+  let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="S.view='home';S.tab='games';R()">✕</button>
+  <div class="sub">🎡 ${t('spinWheel')} · ${spinRound}/${spinTotal}</div>
+  <div style="font-size:16px;font-weight:800;color:var(--saf)">⭐${spinScore}</div></div>
+  <div class="spin-stage">
+    <div class="spin-pointer">▼</div>
+    <div class="spin-wheel" id="spinW" style="background:${grad}">
+      <div class="spin-center">🎡</div>
+      ${lines}${imgs}
+    </div>
+  </div>
+  <div id="spinArea">
+    <button class="btn btn-p btn-w spin-go" id="spinBtn" onclick="doSpin()">🎡 SPIN!</button>
+  </div>`;
+  app.innerHTML=h}
+
+function doSpin(){
+  if(spinBusy)return;spinBusy=true;
+  const btn=$('spinBtn');if(btn)btn.disabled=true;
+  const seg=spinCards.length,segAngle=360/seg;
+  // Pick random target
+  spinCurIdx=Math.floor(Math.random()*seg);
+  // Calculate rotation: land center of target segment at top (pointer)
+  const landAngle=spinCurIdx*segAngle+segAngle/2;
+  const fullTurns=5+Math.floor(Math.random()*3);// 5-7 full rotations
+  const totalDeg=fullTurns*360+landAngle;
+  const wheel=$('spinW');
+  if(wheel){wheel.style.transition='transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+    wheel.style.transform='rotate('+totalDeg+'deg)'}
+  // After spin completes
+  setTimeout(()=>{
+    const card=spinCards[spinCurIdx];
+    if(card.audioUrl)playA(card.audioUrl);
+    // Show answer choices after a beat
+    setTimeout(()=>showSpinQ(card),600)
+  },4200)}
+
+function showSpinQ(card){
+  // Pick 3 wrong answers + 1 correct
+  const wrongs=shuf(spinCards.filter(c=>c.id!==card.id)).slice(0,3);
+  const opts=shuf([card,...wrongs]);
+  let h=`<div class="spin-reveal"><img src="${card.imageUrl}" class="spin-reveal-img">
+    <button class="audio-btn" onclick="playA('${card.audioUrl}')" style="width:44px;height:44px;font-size:18px;position:absolute;bottom:-10px;right:-10px">🔊</button></div>
+  <div class="sub text-center mb-8">${t('listenTap')}</div>
+  <div class="spin-opts">`;
+  opts.forEach(c=>{h+=`<button class="spin-opt" id="so_${c.id}" onclick="spinAns('${c.id}','${card.id}')">${c.gurmukhi}<span class="spin-opt-eng">${c.english}</span></button>`});
+  h+='</div>';$('spinArea').innerHTML=h}
+
+function spinAns(cid,corId){
+  if(!spinBusy)return;// Already answered somehow
+  const ok=cid===corId;
+  const el=$('so_'+cid);if(el)el.classList.add(ok?'spin-ok':'spin-no');
+  if(!ok){const cel=$('so_'+corId);if(cel)cel.classList.add('spin-ok')}
+  if(ok){spinScore++;flash('ok');playA(spinCards.find(c=>c.id===corId).audioUrl)}else flash('no');
+  spinRound++;
+  setTimeout(()=>{
+    spinBusy=false;
+    if(spinRound>=spinTotal){endSpin();return}
+    // Reset wheel rotation for next spin (keep current transform but reset transition)
+    const wheel=$('spinW');if(wheel){wheel.style.transition='none';wheel.style.transform='rotate(0deg)'}
+    rSpinWheel()},1200)}
+
+async function endSpin(){
+  const tm=Math.round((Date.now()-spinStart)/1000);const pct=Math.round(spinScore/spinTotal*100);
+  let em;if(pct>=90)em='🎡';else if(pct>=70)em='🌟';else if(pct>=50)em='💪';else em='📚';
+  const xpE=spinScore*15+(pct===100?50:0);
+  await recAct('quiz_complete',{categoryName:'Spin Wheel',score:spinScore,total:spinTotal,timeSpent:tm});
+  await addXP(S.uid,xpE);await updStreak(S.uid);if(pct===100)confetti();await chkBadges(S.uid);
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:72px">${em}</div>
+  <div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${spinScore}/${spinTotal}</div>
+  <div class="sub">${pct}% · ${tm}s · +${xpE} XP</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stSpin()">🔄 Again</button></div>`}
 
 // Student Quiz
 function rSQuizList(){let h=`<div class="topbar"><div class="h2">🎮 ${t('quiz')}</div></div>`;

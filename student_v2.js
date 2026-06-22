@@ -1,0 +1,384 @@
+// ====================== STUDENT ======================
+function rStudent(){
+  showNav([{id:'home',ico:'🏠',label:t('home')},{id:'practice',ico:'📚',label:t('practice')},{id:'games',ico:'🕹️',label:t('games')},{id:'quiz',ico:'🎮',label:t('quiz')},{id:'profile',ico:'👤',label:t('profile'),badge:S.unread||0}]);
+  if(S.tab==='home')rSHome();else if(S.tab==='practice')rSPractice();else if(S.tab==='games')rSGames();
+  else if(S.tab==='quiz')rSQuizList();else if(S.tab==='profile')rSProfile();
+  else if(S.view==='flashview')rSFlash();else if(S.view==='quizplay')rSQuizPlay();else if(S.view==='messages')rSMsg();else if(S.view==='badges')rSBadges();else if(S.view==='memgame')rMemBoard();else if(S.view==='spinwheel')rSpinWheel()}
+
+async function rSHome(){
+  const sD=await db.collection('students').doc(S.uid).get();const sd=sD.data()||{};const xi=xpInfo(sd.xp||0);const streak=sd.streak||0;
+  let h=`<div class="topbar"><div class="topbar-left"><div class="topbar-avatar" style="background:linear-gradient(135deg,var(--grn),var(--cyan))">${S.logo?'<img src="'+S.logo+'">':(S.uname||'S')[0]}</div>
+  <div class="topbar-info"><div class="name">${S.uname} 👋</div><div class="greeting"><span class="tag tag-pur">${getCR(sd.classroomId)}</span></div></div></div>
+  <div class="topbar-actions">${langSel()}</div></div>`;
+
+  h+=`<div class="xp-bar"><div class="xp-top"><div class="xp-level">⭐ Lv.${xi.level} ${xi.name}</div><div class="xp-pts">${sd.xp||0} XP</div></div>
+  <div class="xp-track"><div class="xp-fill" style="width:${xi.progress}%"></div></div></div>`;
+  if(streak>0)h+=`<div class="streak"><span style="font-size:28px">🔥</span><div><div class="streak-num">${streak}</div><div class="streak-lbl">${t('days')} ${t('streak').toLowerCase()}</div></div></div>`;
+  if(S.welcomeMsg)h+=`<div class="welcome">📝 ${S.welcomeMsg}</div>`;
+  h+='<div id="wodArea"></div>';
+
+  h+=`<div class="dash-grid">
+    <div class="dash-card dc-green" onclick="S.tab='practice';R()"><div class="dc-icon">📚</div><div class="dc-title">${t('practice')}</div><div class="dc-sub">${t('cards')}</div></div>
+    <div class="dash-card dc-purple" onclick="S.tab='games';R()"><div class="dc-icon">🕹️</div><div class="dc-title">${t('games')}</div><div class="dc-sub">Speed & Random</div></div>
+    <div class="dash-card dc-blue" onclick="S.tab='quiz';R()"><div class="dc-icon">🎮</div><div class="dc-title">${t('quiz')}</div><div class="dc-sub">Test yourself</div></div>
+    <div class="dash-card dc-orange" onclick="S.view='messages';R()"><div class="dc-icon">💬</div><div class="dc-title">${t('messages')}</div><div class="dc-sub">${S.unread?S.unread+' new':'Chat'}</div></div>
+    <div class="dash-card dc-pink dc-wide" onclick="S.view='badges';R()"><div class="dc-icon">🏅</div><div class="dc-title">${t('badges')}</div><div class="dc-sub">${(sd.badges||[]).length}/${BADGES.length} earned</div></div>
+  </div>`;app.innerHTML=h;loadSWod()}
+
+async function loadSWod(){const today=new Date().toISOString().split('T')[0];
+  const s=await db.collection('wordOfDay').where('teacherId','==',S.teacherId).where('date','==',today).get();
+  const el=$('wodArea');if(!el||s.empty)return;const w=s.docs[0].data();
+  el.innerHTML=`<div class="wod-card" onclick="revWod(this)"><div class="wod-lbl">✨ ${t('wordOfDay')}</div><div style="font-size:48px;margin:8px 0">👆</div>
+  <div style="font-size:16px;font-weight:700">${t('tapMeWod')}</div>
+  <div id="wH" style="display:none" data-a="${w.audioUrl||''}" data-i="${w.imageUrl||''}" data-g="${w.gurmukhi}" data-e="${w.english}"></div></div>`}
+function revWod(el){const d=$('wH');if(!d)return;const au=d.dataset.a,im=d.dataset.i,g=d.dataset.g,e=d.dataset.e;
+  if(au)playA(au);el.onclick=null;
+  el.innerHTML=`<div class="wod-lbl">✨ ${t('wordOfDay')}</div>
+  ${im?'<img class="wod-img" src="'+im+'">':''}<div class="wod-gur">${g}</div><div class="wod-eng">${e}</div>
+  ${au?'<button class="audio-btn" onclick="event.stopPropagation();playA(\''+au+'\')" style="width:48px;height:48px;font-size:20px;margin-top:10px">🔊</button>':''}`}
+
+// Student Practice
+function rSPractice(){let h=`<div class="topbar"><div class="h2">📚 ${t('practice')}</div></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpPractice')}</div></div>`;
+  if(!S.cats.length)h+='<div class="empty"><p>'+t('noContent')+'</p></div>';
+  else{h+='<div class="card-grid">';S.cats.forEach(c=>{const colors=['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899','#06B6D4'];const ci=S.cats.indexOf(c);
+    h+=`<div class="flash-card" onclick="stPrac('${c.id}','${esc(c.name)}')"><div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,${colors[ci%6]},${colors[(ci+1)%6]});display:flex;align-items:center;justify-content:center;font-size:40px">${c.emoji||'📚'}</div>
+    <div class="fc-label"><div class="fc-gur">${c.gurmukhi||c.name}</div><div class="fc-eng">${c.name}</div></div></div>`});h+='</div>'}
+  app.innerHTML=h}
+
+async function stPrac(cid,cn){app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldCards(cid);if(!S.cards.length){toast(t('noContent'),'err');S.tab='practice';R();return}
+  S.flashCards=shuf(S.cards);S.flashIdx=0;S.flashRev=false;S.view='flashview';S.pS=Date.now();S.pC=cn;S.pV=0;rSFlash()}
+
+function rSFlash(){hideNav();const c=S.flashCards[S.flashIdx];if(!c){endP();return}
+  let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="endP()">✕</button><div class="sub">${S.flashIdx+1}/${S.flashCards.length}</div></div>
+  <div class="viewer">${c.imageUrl?'<img class="viewer-img" src="'+c.imageUrl+'">':'<div class="viewer-img" style="display:flex;align-items:center;justify-content:center;font-size:50px">🖼</div>'}
+  <div class="viewer-body">`;
+  if(S.flashRev){h+=`<div class="viewer-gur">${c.gurmukhi}</div><div class="viewer-eng">${c.english}</div>`;
+    if(c.audioUrl)h+='<div style="margin-top:12px"><button class="audio-btn" onclick="playA(\''+c.audioUrl+'\')">🔊</button></div>';
+    if(c.imageUrl2||c.imageUrl3){h+='<div class="extra-imgs">';if(c.imageUrl2)h+='<img src="'+c.imageUrl2+'">';if(c.imageUrl3)h+='<img src="'+c.imageUrl3+'">';h+='</div>'}}
+  else h+='<div class="viewer-gur viewer-blur">ਅੱਖਰ</div>';
+  h+='</div></div>';
+  if(!S.flashRev)h+=`<button class="btn btn-p btn-w" onclick="S.flashRev=true;S.pV++;rSFlash()">👀 ${t('reveal')}</button>`;
+  else{h+='<div class="flex gap-8">';if(S.flashIdx>0)h+=`<button class="btn btn-s flex-1" onclick="S.flashIdx--;S.flashRev=false;rSFlash()">← ${t('prev')}</button>`;
+    h+=S.flashIdx<S.flashCards.length-1?`<button class="btn btn-p flex-1" onclick="S.flashIdx++;S.flashRev=false;rSFlash()">${t('next')} →</button>`:`<button class="btn btn-g flex-1" onclick="endP()">✅</button>`;h+='</div>'}
+  app.innerHTML=h}
+async function endP(){const tm=Math.round((Date.now()-S.pS)/1000);await recAct('practice',{categoryName:S.pC,cardsViewed:S.pV,timeSpent:tm});
+  await addXP(S.uid,S.pV*5);await updStreak(S.uid);S.view='home';S.tab='home';await ldCats(S.teacherId);R()}
+
+// Student Games
+function rSGames(){let h=`<div class="topbar"><div class="h2">🕹️ ${t('games')}</div></div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpGames')}</div></div>
+  <button class="game-btn" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)" onclick="stSpd()">⚡ ${t('speedRound')}<span class="g-sub">60 sec challenge</span></button>
+  <button class="game-btn" style="background:linear-gradient(135deg,#F59E0B,#EF4444)" onclick="startRW()">🎲 ${t('randomWord')}<span class="g-sub">Guess from picture</span></button>
+  <button class="game-btn" style="background:linear-gradient(135deg,#2ECC71,#06B6D4)" onclick="stMem()">🧠 ${t('memoryMatch')}<span class="g-sub">Flip & find pairs</span></button>
+  <button class="game-btn" style="background:linear-gradient(135deg,#EC4899,#F59E0B)" onclick="stSpin()">🎡 ${t('spinWheel')}<span class="g-sub">Spin & guess the word</span></button>`;
+  app.innerHTML=h}
+
+// Random Word
+let rndT=null;
+async function startRW(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl&&c.audioUrl);if(!wb.length){toast(t('noContent'),'err');S.tab='games';R();return}
+  const c=wb[Math.floor(Math.random()*wb.length)];S.rndC=c;
+  app.innerHTML=`<button class="back" onclick="clearInterval(rndT);S.tab='games';R()">← ${t('back')}</button>
+  <div class="text-center"><div class="sub" style="letter-spacing:2px;margin-bottom:12px">🎲 ${t('randomWord').toUpperCase()}</div>
+  <img src="${c.imageUrl}" style="width:200px;height:200px;border-radius:20px;object-fit:cover;border:3px solid rgba(245,166,35,.3)">
+  <div id="rTA" style="margin-top:16px"><div style="position:relative;width:70px;height:70px;margin:0 auto">
+    <svg width="70" height="70" style="transform:rotate(-90deg)"><circle cx="35" cy="35" r="30" fill="none" stroke="var(--card2)" stroke-width="5"/>
+    <circle id="rC" cx="35" cy="35" r="30" fill="none" stroke="var(--saf)" stroke-width="5" stroke-dasharray="189" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear"/></svg>
+    <div id="rS" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:900;color:var(--saf)">10</div></div></div>
+  <div id="rRv" style="display:none;margin-top:16px">
+    <button class="audio-btn" onclick="playA('${c.audioUrl}')" style="margin-bottom:10px">🔊</button>
+    <div class="wod-gur">${c.gurmukhi}</div><div class="wod-eng">${c.english}</div>
+    <div class="flex gap-8 mt-14" style="justify-content:center"><button class="btn btn-s" onclick="clearInterval(rndT);S.tab='games';R()">🏠</button>
+    <button class="btn btn-p" onclick="clearInterval(rndT);startRW()">🎲 ${t('next')}</button></div></div></div>`;
+  let sec=10;rndT=setInterval(()=>{sec--;const el=$('rS'),ci=$('rC');if(el)el.textContent=sec;if(ci)ci.style.strokeDashoffset=((10-sec)/10)*189;
+    if(sec<=0){clearInterval(rndT);const ta=$('rTA'),rv=$('rRv');if(ta)ta.style.display='none';if(rv)rv.style.display='block';playA(S.rndC.audioUrl)}},1000)}
+
+// Speed Round
+let spdT=null,spdSec=60,spdScore=0,spdCards=[];
+async function stSpd(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl&&c.audioUrl);if(wb.length<4){toast('Need 4+','err');S.tab='games';R();return}
+  spdCards=shuf(wb);spdSec=60;spdScore=0;rSpd();spdT=setInterval(()=>{spdSec--;const el=$('spdTime');if(el)el.textContent=spdSec;if(spdSec<=0){clearInterval(spdT);endSpd()}},1000)}
+function rSpd(){if(spdCards.length<4){spdCards=shuf(S.cards.filter(c=>c.imageUrl&&c.audioUrl));if(spdCards.length<4){endSpd();return}}
+  const pick=spdCards.splice(0,4);const cor=pick[Math.floor(Math.random()*4)];const sh=shuf(pick);
+  app.innerHTML=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="clearInterval(spdT);S.tab='games';R()">✕</button>
+  <div style="font-size:20px;font-weight:900;color:var(--red)" id="spdTime">${spdSec}</div>
+  <div style="font-size:18px;font-weight:900;color:var(--saf)">⭐${spdScore}</div></div>
+  <div class="text-center mb-14"><button class="audio-btn" onclick="playA('${cor.audioUrl}')">🔊</button></div>
+  <div class="quiz-grid">${sh.map(c=>`<div class="quiz-opt" id="sp_${c.id}" onclick="spdAns('${c.id}','${cor.id}')"><img src="${c.imageUrl}"></div>`).join('')}</div>`;
+  playA(cor.audioUrl)}
+function spdAns(cid,corId){$('sp_'+cid).classList.add(cid===corId?'ok':'no');if(cid!==corId)$('sp_'+corId)?.classList.add('ok');
+  if(cid===corId){spdScore++;flash('ok')}else flash('no');setTimeout(()=>{if(spdSec>0)rSpd();else endSpd()},500)}
+async function endSpd(){clearInterval(spdT);await recAct('quiz_complete',{categoryName:'Speed',score:spdScore,total:spdScore+5,timeSpent:60});
+  await addXP(S.uid,spdScore*10);await updStreak(S.uid);if(spdScore>=10)confetti();
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:64px">⚡</div><div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${spdScore}</div>
+  <div class="sub">+${spdScore*10} XP</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stSpd()">🔄</button></div>`}
+
+// Memory Match Game
+let memTiles=[],memFlipped=[],memMatched=0,memMoves=0,memLocked=false,memStart=0,memTotal=0,memTimer=null;
+async function stMem(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl);if(wb.length<6){toast('Need 6+ cards with images','err');S.tab='games';R();return}
+  const pick=shuf(wb).slice(0,6);
+  // Create pairs: each card becomes 2 tiles — one image tile, one gurmukhi tile
+  let tiles=[];pick.forEach((c,i)=>{
+    tiles.push({id:'img_'+i,pairId:i,type:'image',imageUrl:c.imageUrl,audioUrl:c.audioUrl||'',gurmukhi:c.gurmukhi,english:c.english});
+    tiles.push({id:'txt_'+i,pairId:i,type:'text',imageUrl:c.imageUrl,audioUrl:c.audioUrl||'',gurmukhi:c.gurmukhi,english:c.english})});
+  memTiles=shuf(tiles);memFlipped=[];memMatched=0;memMoves=0;memLocked=false;memTotal=pick.length;memStart=Date.now();
+  S.view='memgame';rMemBoard();
+  // Start timer
+  if(memTimer)clearInterval(memTimer);memTimer=setInterval(()=>{const el=$('memTime');if(el)el.textContent=memTimeFmt()},1000)}
+
+function memTimeFmt(){return Math.floor((Date.now()-memStart)/1000)+'s'}
+
+function rMemBoard(){hideNav();
+  let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="clearInterval(memTimer);S.view='home';S.tab='games';R()">✕</button>
+  <div class="sub">🧠 ${t('memoryMatch')}</div>
+  <div class="flex gap-8 items-center"><span class="sub2" id="memTime">${memTimeFmt()}</span><span style="font-size:14px;font-weight:800;color:var(--saf)">👆${memMoves}</span></div></div>
+  <div class="mem-grid">`;
+  memTiles.forEach((tile,i)=>{
+    const isFlipped=memFlipped.includes(i);
+    const isMatched=tile.matched;
+    let cls='mem-tile';
+    if(isFlipped||isMatched)cls+=' mem-flipped';
+    if(isMatched)cls+=' mem-matched';
+    h+=`<div class="${cls}" onclick="memFlip(${i})"><div class="mem-tile-inner">
+      <div class="mem-face mem-back">❓</div>
+      <div class="mem-face mem-front">${tile.type==='image'
+        ?'<img src="'+tile.imageUrl+'" alt="">'
+        :'<div class="mem-txt"><div class="mem-gur">'+tile.gurmukhi+'</div><div class="mem-eng">'+tile.english+'</div></div>'
+      }</div></div></div>`});
+  h+='</div>';
+  // Progress dots
+  h+='<div class="mem-progress">';
+  for(let i=0;i<memTotal;i++){h+=`<div class="mem-dot ${i<memMatched?'mem-dot-done':''}"></div>`}
+  h+='</div>';
+  app.innerHTML=h}
+
+function memFlip(i){
+  if(memLocked)return;
+  if(memFlipped.includes(i))return;
+  if(memTiles[i].matched)return;
+  memFlipped.push(i);
+  // Flip animation
+  const tiles=document.querySelectorAll('.mem-tile');
+  if(tiles[i])tiles[i].classList.add('mem-flipped');
+  // Play audio on flip if available
+  if(memTiles[i].audioUrl&&memTiles[i].type==='text')playA(memTiles[i].audioUrl);
+  if(memFlipped.length===2){
+    memMoves++;
+    const el=document.querySelector('[style*="color:var(--saf)"]');
+    // Update moves counter
+    const movesEl=app.querySelector('.flex.justify-between span[style]');
+    memLocked=true;
+    const a=memFlipped[0],b=memFlipped[1];
+    if(memTiles[a].pairId===memTiles[b].pairId&&memTiles[a].type!==memTiles[b].type){
+      // Match!
+      memTiles[a].matched=true;memTiles[b].matched=true;memMatched++;
+      setTimeout(()=>{
+        if(tiles[a])tiles[a].classList.add('mem-matched');
+        if(tiles[b])tiles[b].classList.add('mem-matched');
+        flash('ok');
+        if(memTiles[a].audioUrl)playA(memTiles[a].audioUrl);
+        memFlipped=[];memLocked=false;
+        // Update progress dots
+        const dots=document.querySelectorAll('.mem-dot');
+        dots.forEach((d,di)=>{if(di<memMatched)d.classList.add('mem-dot-done')});
+        // Update moves display
+        rMemUpdateHUD();
+        if(memMatched===memTotal)setTimeout(endMem,600)},500)}
+    else{
+      // No match — flip back
+      setTimeout(()=>{
+        if(tiles[a])tiles[a].classList.remove('mem-flipped');
+        if(tiles[b])tiles[b].classList.remove('mem-flipped');
+        flash('no');
+        memFlipped=[];memLocked=false;
+        rMemUpdateHUD()},800)}}}
+
+function rMemUpdateHUD(){const el=$('memTime');if(el)el.textContent=memTimeFmt();
+  // Re-render just the moves count without full redraw
+  const hud=app.querySelector('.flex.justify-between.items-center');
+  if(hud){const sp=hud.querySelectorAll('span');if(sp.length>=2)sp[1].innerHTML='👆'+memMoves}}
+
+async function endMem(){clearInterval(memTimer);memTimer=null;
+  const tm=Math.round((Date.now()-memStart)/1000);
+  const perfect=memMoves===memTotal;const stars=memMoves<=memTotal+2?3:memMoves<=memTotal+5?2:1;
+  const xpE=memTotal*10+(perfect?50:0)+(stars===3?30:stars===2?15:0);
+  await recAct('quiz_complete',{categoryName:'Memory Match',score:memTotal,total:memTotal,timeSpent:tm});
+  await addXP(S.uid,xpE);await updStreak(S.uid);if(perfect)confetti();await chkBadges(S.uid);
+  const starH='⭐'.repeat(stars)+'<span style="opacity:.2">'+'⭐'.repeat(3-stars)+'</span>';
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:72px">🧠</div>
+  <div style="font-size:36px;margin:10px 0">${starH}</div>
+  <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:4px">${memMatched}/${memTotal} pairs · ${memMoves} moves · ${tm}s</div>
+  <div class="sub">+${xpE} XP${perfect?' · PERFECT! 🎉':''}</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stMem()">🔄 Again</button></div>`}
+
+// Spin the Wheel Game
+const SPIN_COLORS=['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899','#06B6D4'];
+let spinCards=[],spinRound=0,spinTotal=5,spinScore=0,spinStart=0,spinBusy=false,spinCurIdx=-1;
+
+async function stSpin(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
+  const wb=S.cards.filter(c=>c.imageUrl&&c.audioUrl);if(wb.length<6){toast('Need 6+ cards with images & audio','err');S.tab='games';R();return}
+  spinCards=shuf(wb).slice(0,6);spinRound=0;spinScore=0;spinStart=Date.now();spinBusy=false;spinCurIdx=-1;
+  S.view='spinwheel';rSpinWheel()}
+
+function rSpinWheel(){hideNav();
+  const seg=spinCards.length;const segAngle=360/seg;
+  // Build conic gradient
+  let grad='conic-gradient(';spinCards.forEach((c,i)=>{const s=i*segAngle,e=(i+1)*segAngle;
+    grad+=SPIN_COLORS[i%SPIN_COLORS.length]+' '+s+'deg '+e+'deg';if(i<seg-1)grad+=','});grad+=')';
+  // Build image positions (polar -> cartesian)
+  let imgs='';const r=75,cx=130,cy=130;
+  spinCards.forEach((c,i)=>{const ang=(i*segAngle+segAngle/2)*Math.PI/180;
+    const x=cx+r*Math.sin(ang)-22,y=cy-r*Math.cos(ang)-22;
+    imgs+=`<img src="${c.imageUrl}" class="spin-img" style="left:${x}px;top:${y}px">`});
+  // Segment lines
+  let lines='';for(let i=0;i<seg;i++){const ang=i*segAngle;
+    lines+=`<div class="spin-line" style="transform:rotate(${ang}deg)"></div>`}
+
+  let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="S.view='home';S.tab='games';R()">✕</button>
+  <div class="sub">🎡 ${t('spinWheel')} · ${spinRound}/${spinTotal}</div>
+  <div style="font-size:16px;font-weight:800;color:var(--saf)">⭐${spinScore}</div></div>
+  <div class="spin-stage">
+    <div class="spin-pointer">▼</div>
+    <div class="spin-wheel" id="spinW" style="background:${grad}">
+      <div class="spin-center">🎡</div>
+      ${lines}${imgs}
+    </div>
+  </div>
+  <div id="spinArea">
+    <button class="btn btn-p btn-w spin-go" id="spinBtn" onclick="doSpin()">🎡 SPIN!</button>
+  </div>`;
+  app.innerHTML=h}
+
+function doSpin(){
+  if(spinBusy)return;spinBusy=true;
+  const btn=$('spinBtn');if(btn)btn.disabled=true;
+  const seg=spinCards.length,segAngle=360/seg;
+  // Pick random target
+  spinCurIdx=Math.floor(Math.random()*seg);
+  // Calculate rotation: land center of target segment at top (pointer)
+  const landAngle=spinCurIdx*segAngle+segAngle/2;
+  const fullTurns=5+Math.floor(Math.random()*3);// 5-7 full rotations
+  const totalDeg=fullTurns*360+landAngle;
+  const wheel=$('spinW');
+  if(wheel){wheel.style.transition='transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+    wheel.style.transform='rotate('+totalDeg+'deg)'}
+  // After spin completes
+  setTimeout(()=>{
+    const card=spinCards[spinCurIdx];
+    if(card.audioUrl)playA(card.audioUrl);
+    // Show answer choices after a beat
+    setTimeout(()=>showSpinQ(card),600)
+  },4200)}
+
+function showSpinQ(card){
+  // Pick 3 wrong answers + 1 correct
+  const wrongs=shuf(spinCards.filter(c=>c.id!==card.id)).slice(0,3);
+  const opts=shuf([card,...wrongs]);
+  let h=`<div class="spin-reveal"><img src="${card.imageUrl}" class="spin-reveal-img">
+    <button class="audio-btn" onclick="playA('${card.audioUrl}')" style="width:44px;height:44px;font-size:18px;position:absolute;bottom:-10px;right:-10px">🔊</button></div>
+  <div class="sub text-center mb-8">${t('listenTap')}</div>
+  <div class="spin-opts">`;
+  opts.forEach(c=>{h+=`<button class="spin-opt" id="so_${c.id}" onclick="spinAns('${c.id}','${card.id}')">${c.gurmukhi}<span class="spin-opt-eng">${c.english}</span></button>`});
+  h+='</div>';$('spinArea').innerHTML=h}
+
+function spinAns(cid,corId){
+  if(!spinBusy)return;// Already answered somehow
+  const ok=cid===corId;
+  const el=$('so_'+cid);if(el)el.classList.add(ok?'spin-ok':'spin-no');
+  if(!ok){const cel=$('so_'+corId);if(cel)cel.classList.add('spin-ok')}
+  if(ok){spinScore++;flash('ok');playA(spinCards.find(c=>c.id===corId).audioUrl)}else flash('no');
+  spinRound++;
+  setTimeout(()=>{
+    spinBusy=false;
+    if(spinRound>=spinTotal){endSpin();return}
+    // Reset wheel rotation for next spin (keep current transform but reset transition)
+    const wheel=$('spinW');if(wheel){wheel.style.transition='none';wheel.style.transform='rotate(0deg)'}
+    rSpinWheel()},1200)}
+
+async function endSpin(){
+  const tm=Math.round((Date.now()-spinStart)/1000);const pct=Math.round(spinScore/spinTotal*100);
+  let em;if(pct>=90)em='🎡';else if(pct>=70)em='🌟';else if(pct>=50)em='💪';else em='📚';
+  const xpE=spinScore*15+(pct===100?50:0);
+  await recAct('quiz_complete',{categoryName:'Spin Wheel',score:spinScore,total:spinTotal,timeSpent:tm});
+  await addXP(S.uid,xpE);await updStreak(S.uid);if(pct===100)confetti();await chkBadges(S.uid);
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:72px">${em}</div>
+  <div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${spinScore}/${spinTotal}</div>
+  <div class="sub">${pct}% · ${tm}s · +${xpE} XP</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stSpin()">🔄 Again</button></div>`}
+
+// Student Quiz
+function rSQuizList(){let h=`<div class="topbar"><div class="h2">🎮 ${t('quiz')}</div></div>`;
+  if(!S.cats.length)h+='<div class="empty"><p>'+t('noContent')+'</p></div>';
+  else{h+='<div class="card-grid">';S.cats.forEach((c,i)=>{const colors=['#EF4444','#F59E0B','#2ECC71','#3B82F6','#8B5CF6','#EC4899'];
+    h+=`<div class="flash-card" onclick="stQuiz('${c.id}','${esc(c.name)}')"><div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,${colors[i%6]+'99'},${colors[i%6]});display:flex;align-items:center;justify-content:center;font-size:40px">🎮</div>
+    <div class="fc-label"><div class="fc-gur">${c.gurmukhi||c.name}</div><div class="fc-eng">${c.name}</div></div></div>`});h+='</div>'}
+  app.innerHTML=h}
+
+async function stQuiz(cid,cn){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  const qgS=await db.collection('quizGroups').where('categoryId','==',cid).get();const groups=qgS.docs.map(d=>({id:d.id,...d.data()}));
+  await ldCards(cid);if(S.cards.length<4){toast('Need 4+','err');S.tab='quiz';R();return}
+  let rounds=[];for(const g of groups){const gc=g.cardIds.map(id=>S.cards.find(c=>c.id===id)).filter(Boolean);if(gc.length===4){const cor=gc[Math.floor(Math.random()*4)];rounds.push({cards:shuf(gc),cId:cor.id,aUrl:cor.audioUrl})}}
+  let att=0;while(rounds.length<5&&att<50){att++;const pk=shuf(S.cards).slice(0,4);if(pk.length<4||!pk.every(c=>c.imageUrl))continue;const wa=pk.filter(c=>c.audioUrl);if(!wa.length)continue;
+    const cor=wa[Math.floor(Math.random()*wa.length)];rounds.push({cards:shuf(pk),cId:cor.id,aUrl:cor.audioUrl})}
+  if(!rounds.length){toast(t('noContent'),'err');S.tab='quiz';R();return}
+  S.qCards=shuf(rounds);S.qIdx=0;S.qScore=0;S.qTotal=S.qCards.length;S.qStart=Date.now();S.qAns=false;S.qCat=cn;S.view='quizplay';rSQuizPlay()}
+
+function rSQuizPlay(){if(S.qIdx>=S.qCards.length){showQR();return}const r=S.qCards[S.qIdx];
+  app.innerHTML=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="S.view='home';S.tab='quiz';R()">✕</button>
+  <div class="sub">${S.qIdx+1}/${S.qTotal}</div><div style="font-size:16px;font-weight:900;color:var(--saf)">⭐${S.qScore}</div></div>
+  <div class="text-center mb-14"><div class="sub mb-8">${t('listenTap')}</div>
+  <button class="audio-btn" onclick="playA('${r.aUrl}')">🔊</button></div>
+  <div class="quiz-grid">${r.cards.map(c=>`<div class="quiz-opt" id="q_${c.id}" onclick="ansQ('${c.id}')"><img src="${c.imageUrl}"></div>`).join('')}</div>`}
+
+function ansQ(cid){if(S.qAns)return;S.qAns=true;const r=S.qCards[S.qIdx],ok=cid===r.cId;
+  $('q_'+cid).classList.add(ok?'ok':'no');if(!ok)$('q_'+r.cId)?.classList.add('ok');
+  if(ok){S.qScore++;flash('ok')}else flash('no');playA(r.aUrl);
+  const btn=document.createElement('button');btn.className='btn btn-p btn-w';btn.style.marginTop='14px';
+  btn.textContent=S.qIdx<S.qTotal-1?t('next')+' →':'🎉';btn.onclick=()=>{S.qIdx++;S.qAns=false;S.qIdx>=S.qCards.length?showQR():rSQuizPlay()};app.querySelector('.quiz-grid').after(btn)}
+function flash(ty){const o=document.createElement('div');o.className='flash-ov '+ty;o.innerHTML='<span>'+(ty==='ok'?'✅':'❌')+'</span>';document.body.appendChild(o);setTimeout(()=>o.remove(),500)}
+
+async function showQR(){const tm=Math.round((Date.now()-S.qStart)/1000),pct=Math.round(S.qScore/S.qTotal*100);
+  let em;if(pct>=90)em='🏆';else if(pct>=70)em='🌟';else if(pct>=50)em='💪';else em='📚';
+  await recAct('quiz_complete',{categoryName:S.qCat,score:S.qScore,total:S.qTotal,timeSpent:tm});
+  const xpE=S.qScore*15+(pct===100?50:0);await addXP(S.uid,xpE);await updStreak(S.uid);if(pct===100)confetti();await chkBadges(S.uid);
+  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:72px">${em}</div>
+  <div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${S.qScore}/${S.qTotal}</div>
+  <div class="sub">${pct}% · +${xpE} XP</div></div>
+  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='home';R()">🏠</button>
+  <button class="btn btn-p flex-1" onclick="stQuiz('${S.cards[0]?.categoryId}','${esc(S.qCat)}')">🔄</button></div>`}
+
+// Student Badges
+async function rSBadges(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';const earned=await chkBadges(S.uid);
+  let h=`<button class="back" onclick="S.view='home';S.tab='home';R()">← ${t('back')}</button>
+  <div class="panel"><div class="panel-title">🏅 ${t('badges')} (${earned.length}/${BADGES.length})</div>
+  <div class="badge-grid">`;BADGES.forEach(b=>{h+=`<div class="badge ${earned.includes(b.id)?'earned':''}"><div class="b-ico">${b.ico}</div><div class="b-name">${b.name}</div></div>`});
+  h+='</div></div>';app.innerHTML=h}
+
+// Student Messages
+async function rSMsg(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  await markRd(S.uid,'teacher');await markRd(S.uid,S.teacherId);await markRd(S.uid,'admin');S.unread=0;
+  const m1=await getMsgs(S.uid,S.teacherId);const m2=await getMsgs(S.uid,'admin');const m3=await getMsgs(S.uid,'teacher');
+  const msgs=[...m1,...m2,...m3].filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i);msgs.sort((a,b)=>a.timestamp-b.timestamp);
+  let h=`<button class="back" onclick="S.view='home';S.tab='home';R()">← ${t('back')}</button><div class="panel"><div class="panel-title">💬 ${t('messages')}</div><div class="msg-list" id="mL">`;
+  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';
+  else msgs.forEach(m=>{const s=m.fromId===S.uid;h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}<div class="msg-time">${fmt(m.timestamp)}</div></div>`});
+  h+=`</div><div class="msg-compose"><input class="inp" id="mI" placeholder="..." onkeydown="if(event.key==='Enter')sndSM()"><button class="btn btn-p btn-sm" onclick="sndSM()">${t('send')}</button></div></div>`;
+  app.innerHTML=h;const l=$('mL');if(l)l.scrollTop=l.scrollHeight}
+async function sndSM(){const x=$('mI').value.trim();if(!x)return;$('mI').value='';await sendMsg(S.uid,S.uname,'student',S.teacherId,'Teacher',x);rSMsg()}
+
+// Student Profile
+async function rSProfile(){const sD=await db.collection('students').doc(S.uid).get();const sd=sD.data()||{};const xi=xpInfo(sd.xp||0);
+  app.innerHTML=`<div class="topbar"><div class="h2">👤 ${t('profile')}</div></div>
+  <div class="text-center mb-14"><div class="avatar av-grn" style="width:64px;height:64px;font-size:28px;border-radius:20px;margin:0 auto">${(S.uname||'S')[0]}</div>
+  <div class="h2" style="margin-top:10px">${S.uname}</div><div class="sub"><span class="tag tag-pur">${getCR(sd.classroomId)}</span></div></div>
+  <div class="xp-bar"><div class="xp-top"><div class="xp-level">⭐ Lv.${xi.level} ${xi.name}</div><div class="xp-pts">${sd.xp||0} XP</div></div>
+  <div class="xp-track"><div class="xp-fill" style="width:${xi.progress}%"></div></div></div>
+  <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">🔥${sd.streak||0}</div><div class="score-lbl">${t('streak')}</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--pur)">${(sd.badges||[]).length}</div><div class="score-lbl">${t('badges')}</div></div></div>
+  <button class="btn btn-d btn-w" onclick="doLogout()">🚪 ${t('logout')}</button>`}
+
+// ============ START APP (all files loaded) ============
+init();

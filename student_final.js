@@ -228,16 +228,6 @@ function rSpinWheel(){hideNav();
   // Build conic gradient
   let grad='conic-gradient(';spinCards.forEach((c,i)=>{const s=i*segAngle,e=(i+1)*segAngle;
     grad+=SPIN_COLORS[i%SPIN_COLORS.length]+' '+s+'deg '+e+'deg';if(i<seg-1)grad+=','});grad+=')';
-  // Build Gurmukhi labels positioned around wheel
-  let labels='';const r=78,cx=130,cy=130;
-  spinCards.forEach((c,i)=>{const ang=(i*segAngle+segAngle/2)*Math.PI/180;
-    const x=cx+r*Math.sin(ang),y=cy-r*Math.cos(ang);
-    // Rotate each label to follow the segment angle
-    const rot=i*segAngle+segAngle/2;
-    labels+=`<div class="spin-label" style="left:${x}px;top:${y}px;transform:translate(-50%,-50%) rotate(${rot}deg)">${c.gurmukhi}</div>`});
-  // Segment lines
-  let lines='';for(let i=0;i<seg;i++){const ang=i*segAngle;
-    lines+=`<div class="spin-line" style="transform:rotate(${ang}deg)"></div>`}
 
   let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="S.view='home';S.tab='games';R()">✕</button>
   <div class="sub">🎡 ${t('spinWheel')} · ${spinRound}/${spinTotal}</div>
@@ -246,7 +236,6 @@ function rSpinWheel(){hideNav();
     <div class="spin-pointer">▼</div>
     <div class="spin-wheel" id="spinW" style="background:${grad}">
       <div class="spin-center">🎡</div>
-      ${lines}${labels}
     </div>
   </div>
   <div id="spinArea">
@@ -267,22 +256,22 @@ function doSpin(){
   const wheel=$('spinW');
   if(wheel){wheel.style.transition='transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
     wheel.style.transform='rotate('+totalDeg+'deg)'}
-  // After spin completes
+  // After spin completes - no auto audio play
   setTimeout(()=>{
-    const card=spinCards[spinCurIdx];
-    if(card.audioUrl)playA(card.audioUrl);
-    setTimeout(()=>showSpinQ(card),600)
+    setTimeout(()=>showSpinQ(spinCards[spinCurIdx]),200)
   },4200)}
 
 function showSpinQ(card){
-  // Show Gurmukhi word prominently, then 4 English choices
+  // Show Gurmukhi word prominently (BOLD), image, then 4 English choices
   const wrongs=shuf(spinCards.filter(c=>c.id!==card.id)).slice(0,3);
   const opts=shuf([card,...wrongs]);
   let h=`<div class="spin-reveal-word">
-    <div class="spin-gur-big">${card.gurmukhi}</div>
+    <div class="spin-gur-big" style="font-size:48px;font-weight:900;color:var(--pur);margin-bottom:16px;letter-spacing:2px">${card.gurmukhi}</div>
+    ${card.imageUrl?'<img src="'+card.imageUrl+'" style="width:160px;height:160px;border-radius:16px;object-fit:cover;border:4px solid var(--pur);margin-bottom:16px">':''}
+    <div style="font-size:18px;font-weight:700;color:var(--txt)">${card.english}</div>
     ${card.audioUrl?'<button class="audio-btn" onclick="playA(\''+card.audioUrl+'\')" style="width:48px;height:48px;font-size:20px;margin-top:10px">🔊</button>':''}
   </div>
-  <div class="sub text-center mb-8">${t('pickEnglish')}</div>
+  <div class="sub text-center mb-8" style="margin-top:16px">${t('pickEnglish')}</div>
   <div class="spin-opts">`;
   opts.forEach(c=>{h+=`<button class="spin-opt spin-opt-eng-btn" id="so_${c.id}" onclick="spinAns('${c.id}','${card.id}')">${c.english}${c.imageUrl?'<img src="'+c.imageUrl+'" class="spin-opt-thumb">':''}</button>`});
   h+='</div>';$('spinArea').innerHTML=h}
@@ -292,8 +281,7 @@ function spinAns(cid,corId){
   const ok=cid===corId;
   const el=$('so_'+cid);if(el)el.classList.add(ok?'spin-ok':'spin-no');
   if(!ok){const cel=$('so_'+corId);if(cel)cel.classList.add('spin-ok')}
-  const corCard=spinCards.find(c=>c.id===corId);
-  if(ok){spinScore++;flash('ok');if(corCard?.audioUrl)playA(corCard.audioUrl)}else flash('no');
+  if(ok){spinScore++;flash('ok')}else flash('no');
   spinRound++;
   setTimeout(()=>{
     spinBusy=false;

@@ -1,4 +1,65 @@
 // ====================== STUDENT ======================
+// ====================== REUSABLE SETTINGS MODULE ======================
+const GameSettings={
+  store:{},
+  // Initialize settings for a game
+  init(gameName){if(!this.store[gameName])this.store[gameName]={categories:[],customCards:[]};return this.store[gameName]},
+  // Get all categories available
+  getAllCategories(){return S.cats||[]},
+  // Get selected categories for a game
+  getSelected(gameName){const gs=this.init(gameName);return gs.categories.length>0?gs.categories:this.getAllCategories()},
+  // Toggle category selection
+  toggleCategory(gameName,catId){const gs=this.init(gameName);const idx=gs.categories.indexOf(catId);
+    if(idx>-1)gs.categories.splice(idx,1);else gs.categories.push(catId);this.save(gameName)},
+  // Get filtered cards for a game
+  async getGameCards(gameName){await ldAC(S.teacherId);const selected=this.getSelected(gameName);
+    return S.cards.filter(c=>selected.includes(c.categoryId))},
+  // Save settings to localStorage
+  save(gameName){try{localStorage.setItem('gameSettings_'+S.uid+'_'+gameName,JSON.stringify(this.store[gameName]))}catch(e){console.error('Save failed',e)}},
+  // Load settings from localStorage
+  load(gameName){try{const saved=localStorage.getItem('gameSettings_'+S.uid+'_'+gameName);if(saved)this.store[gameName]=JSON.parse(saved);else this.init(gameName)}catch(e){console.error('Load failed',e)}}};
+
+// Render Settings Modal
+async function showGameSettings(gameName){
+  GameSettings.load(gameName);const gs=GameSettings.store[gameName];const allCats=GameSettings.getAllCategories();
+  let h=`<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999" onclick="if(event.target===this)closeSettingsModal()">
+  <div style="background:var(--card);border-radius:20px;padding:20px;max-width:400px;width:90%;max-height:70vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="margin:0;font-size:20px;font-weight:900;color:var(--txt)">⚙️ ${gameName} Settings</h2>
+      <button onclick="closeSettingsModal()" style="border:none;background:none;font-size:24px;cursor:pointer">✕</button>
+    </div>
+    
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px">📂 Select Categories</div>
+      <div style="display:flex;flex-direction:column;gap:8px">`;
+  allCats.forEach(cat=>{const checked=gs.categories.length===0||gs.categories.includes(cat.id);
+    h+=`<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;border-radius:8px;background:var(--bg);font-size:14px">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleGameCat('${gameName}','${cat.id}')" style="cursor:pointer">
+      <span>${cat.emoji||'📂'}</span> <span>${cat.name}</span>
+    </label>`});
+  h+=`</div></div>
+    
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px">🖼️ Upload Custom Image</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="file" id="customImgInput" accept="image/*" style="padding:8px;border-radius:8px;border:2px solid var(--brd);font-size:13px">
+        <button onclick="uploadCustomImg('${gameName}')" class="btn btn-p btn-sm">Upload</button>
+      </div>
+    </div>
+    
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button onclick="closeSettingsModal()" class="btn btn-s flex-1">Cancel</button>
+      <button onclick="saveGameSettings('${gameName}')" class="btn btn-p flex-1">Save</button>
+    </div>
+  </div></div>`;
+  app.innerHTML=h}
+
+function toggleGameCat(gameName,catId){GameSettings.toggleCategory(gameName,catId)}
+async function uploadCustomImg(gameName){const file=document.getElementById('customImgInput').files[0];if(!file){toast('Select image','err');return}
+  toast('Upload feature coming soon','info')}
+function saveGameSettings(gameName){GameSettings.save(gameName);toast('Settings saved','ok');closeSettingsModal();rSGames()}
+function closeSettingsModal(){S.tab='games';R()}
+
 function rStudent(){
   showNav([{id:'home',ico:'🏠',label:t('home')},{id:'practice',ico:'📚',label:t('practice')},{id:'games',ico:'🕹️',label:t('games')},{id:'quiz',ico:'🎮',label:t('quiz')},{id:'profile',ico:'👤',label:t('profile'),badge:S.unread||0}]);
   if(S.tab==='home')rSHome();else if(S.tab==='practice')rSPractice();else if(S.tab==='games')rSGames();
@@ -66,7 +127,7 @@ async function endP(){const tm=Math.round((Date.now()-S.pS)/1000);await recAct('
   await addXP(S.uid,S.pV*5);await updStreak(S.uid);S.view='home';S.tab='home';await ldCats(S.teacherId);R()}
 
 // Student Games
-function rSGames(){let h=`<div class="topbar"><div class="h2">🕹️ ${t('games')}</div></div>
+function rSGames(){let h=`<div class="topbar"><div style="display:flex;justify-content:space-between;align-items:center;width:100%"><div class="h2">🕹️ ${t('games')}</div><button class="btn btn-s" onclick="showGameSettings('SpinWheel')" style="padding:6px 12px;font-size:12px;height:auto">⚙️ Settings</button></div></div>
   <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpGames')}</div></div>
   <button class="game-btn" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6)" onclick="stSpd()">⚡ ${t('speedRound')}<span class="g-sub">60 sec challenge</span></button>
   <button class="game-btn" style="background:linear-gradient(135deg,#F59E0B,#EF4444)" onclick="startRW()">🎲 ${t('randomWord')}<span class="g-sub">Guess from picture</span></button>
@@ -218,8 +279,9 @@ async function endMem(){clearInterval(memTimer);memTimer=null;
 const SPIN_COLORS=['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899','#06B6D4'];
 let spinCards=[],spinRound=0,spinTotal=5,spinScore=0,spinStart=0,spinBusy=false,spinCurIdx=-1;
 
-async function stSpin(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';await ldAC(S.teacherId);
-  const wb=S.cards.filter(c=>c.imageUrl&&c.audioUrl);if(wb.length<6){toast('Need 6+ cards with images & audio','err');S.tab='games';R();return}
+async function stSpin(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  GameSettings.load('SpinWheel');const cards=await GameSettings.getGameCards('SpinWheel');
+  const wb=cards.filter(c=>c.gurmukhi&&c.english);if(wb.length<6){toast('Need 6+ cards','err');S.tab='games';R();return}
   spinCards=shuf(wb).slice(0,6);spinRound=0;spinScore=0;spinStart=Date.now();spinBusy=false;spinCurIdx=-1;
   S.view='spinwheel';rSpinWheel()}
 
@@ -228,14 +290,6 @@ function rSpinWheel(){hideNav();
   // Build conic gradient
   let grad='conic-gradient(';spinCards.forEach((c,i)=>{const s=i*segAngle,e=(i+1)*segAngle;
     grad+=SPIN_COLORS[i%SPIN_COLORS.length]+' '+s+'deg '+e+'deg';if(i<seg-1)grad+=','});grad+=')';
-  // Build image positions (polar -> cartesian)
-  let imgs='';const r=75,cx=130,cy=130;
-  spinCards.forEach((c,i)=>{const ang=(i*segAngle+segAngle/2)*Math.PI/180;
-    const x=cx+r*Math.sin(ang)-22,y=cy-r*Math.cos(ang)-22;
-    imgs+=`<img src="${c.imageUrl}" class="spin-img" style="left:${x}px;top:${y}px">`});
-  // Segment lines
-  let lines='';for(let i=0;i<seg;i++){const ang=i*segAngle;
-    lines+=`<div class="spin-line" style="transform:rotate(${ang}deg)"></div>`}
 
   let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="S.view='home';S.tab='games';R()">✕</button>
   <div class="sub">🎡 ${t('spinWheel')} · ${spinRound}/${spinTotal}</div>
@@ -244,7 +298,6 @@ function rSpinWheel(){hideNav();
     <div class="spin-pointer">▼</div>
     <div class="spin-wheel" id="spinW" style="background:${grad}">
       <div class="spin-center">🎡</div>
-      ${lines}${imgs}
     </div>
   </div>
   <div id="spinArea">
@@ -260,41 +313,41 @@ function doSpin(){
   spinCurIdx=Math.floor(Math.random()*seg);
   // Calculate rotation: land center of target segment at top (pointer)
   const landAngle=spinCurIdx*segAngle+segAngle/2;
-  const fullTurns=5+Math.floor(Math.random()*3);// 5-7 full rotations
+  const fullTurns=5+Math.floor(Math.random()*3);
   const totalDeg=fullTurns*360+landAngle;
   const wheel=$('spinW');
   if(wheel){wheel.style.transition='transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
     wheel.style.transform='rotate('+totalDeg+'deg)'}
-  // After spin completes
+  // After spin completes - no auto audio play
   setTimeout(()=>{
-    const card=spinCards[spinCurIdx];
-    if(card.audioUrl)playA(card.audioUrl);
-    // Show answer choices after a beat
-    setTimeout(()=>showSpinQ(card),600)
+    setTimeout(()=>showSpinQ(spinCards[spinCurIdx]),200)
   },4200)}
 
 function showSpinQ(card){
-  // Pick 3 wrong answers + 1 correct
+  // Show Gurmukhi word prominently (BOLD), image, then 4 English choices
   const wrongs=shuf(spinCards.filter(c=>c.id!==card.id)).slice(0,3);
   const opts=shuf([card,...wrongs]);
-  let h=`<div class="spin-reveal"><img src="${card.imageUrl}" class="spin-reveal-img">
-    <button class="audio-btn" onclick="playA('${card.audioUrl}')" style="width:44px;height:44px;font-size:18px;position:absolute;bottom:-10px;right:-10px">🔊</button></div>
-  <div class="sub text-center mb-8">${t('listenTap')}</div>
+  let h=`<div class="spin-reveal-word">
+    <div class="spin-gur-big" style="font-size:48px;font-weight:900;color:var(--pur);margin-bottom:16px;letter-spacing:2px">${card.gurmukhi}</div>
+    ${card.imageUrl?'<img src="'+card.imageUrl+'" style="width:160px;height:160px;border-radius:16px;object-fit:cover;border:4px solid var(--pur);margin-bottom:16px">':''}
+    <div style="font-size:18px;font-weight:700;color:var(--txt)">${card.english}</div>
+    ${card.audioUrl?'<button class="audio-btn" onclick="playA(\''+card.audioUrl+'\')" style="width:48px;height:48px;font-size:20px;margin-top:10px">🔊</button>':''}
+  </div>
+  <div class="sub text-center mb-8" style="margin-top:16px">${t('pickEnglish')}</div>
   <div class="spin-opts">`;
-  opts.forEach(c=>{h+=`<button class="spin-opt" id="so_${c.id}" onclick="spinAns('${c.id}','${card.id}')">${c.gurmukhi}<span class="spin-opt-eng">${c.english}</span></button>`});
+  opts.forEach(c=>{h+=`<button class="spin-opt spin-opt-eng-btn" id="so_${c.id}" onclick="spinAns('${c.id}','${card.id}')">${c.english}${c.imageUrl?'<img src="'+c.imageUrl+'" class="spin-opt-thumb">':''}</button>`});
   h+='</div>';$('spinArea').innerHTML=h}
 
 function spinAns(cid,corId){
-  if(!spinBusy)return;// Already answered somehow
+  if(!spinBusy)return;
   const ok=cid===corId;
   const el=$('so_'+cid);if(el)el.classList.add(ok?'spin-ok':'spin-no');
   if(!ok){const cel=$('so_'+corId);if(cel)cel.classList.add('spin-ok')}
-  if(ok){spinScore++;flash('ok');playA(spinCards.find(c=>c.id===corId).audioUrl)}else flash('no');
+  if(ok){spinScore++;flash('ok')}else flash('no');
   spinRound++;
   setTimeout(()=>{
     spinBusy=false;
     if(spinRound>=spinTotal){endSpin();return}
-    // Reset wheel rotation for next spin (keep current transform but reset transition)
     const wheel=$('spinW');if(wheel){wheel.style.transition='none';wheel.style.transform='rotate(0deg)'}
     rSpinWheel()},1200)}
 

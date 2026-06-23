@@ -11,9 +11,15 @@ const GameSettings={
   // Toggle category selection
   toggleCategory(gameName,catId){const gs=this.init(gameName);const idx=gs.categories.indexOf(catId);
     if(idx>-1)gs.categories.splice(idx,1);else gs.categories.push(catId);this.save(gameName)},
-  // Get filtered cards for a game
+  // Get filtered cards for a game (category + custom)
   async getGameCards(gameName){await ldAC(S.teacherId);const selected=this.getSelected(gameName);
-    return S.cards.filter(c=>selected.includes(c.categoryId))},
+    const catCards=S.cards.filter(c=>selected.includes(c.categoryId));
+    const customCards=(this.store[gameName]?.customCards||[]).map((c,i)=>({id:'custom_'+i,categoryId:'custom',gurmukhi:c.gurmukhi,english:c.english,imageUrl:c.imageUrl,audioUrl:''}));
+    return [...catCards,...customCards]},
+  // Add custom card
+  addCustomCard(gameName,card){const gs=this.init(gameName);gs.customCards.push(card);this.save(gameName)},
+  // Remove custom card
+  removeCustomCard(gameName,idx){const gs=this.init(gameName);gs.customCards.splice(idx,1);this.save(gameName)},
   // Save settings to localStorage
   save(gameName){try{localStorage.setItem('gameSettings_'+S.uid+'_'+gameName,JSON.stringify(this.store[gameName]))}catch(e){console.error('Save failed',e)}},
   // Load settings from localStorage
@@ -23,14 +29,14 @@ const GameSettings={
 async function showGameSettings(gameName){
   GameSettings.load(gameName);const gs=GameSettings.store[gameName];const allCats=GameSettings.getAllCategories();
   let h=`<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999" onclick="if(event.target===this)closeSettingsModal()">
-  <div style="background:var(--card);border-radius:20px;padding:20px;max-width:400px;width:90%;max-height:70vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+  <div style="background:var(--card);border-radius:20px;padding:20px;max-width:450px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <h2 style="margin:0;font-size:20px;font-weight:900;color:var(--txt)">⚙️ ${gameName} Settings</h2>
       <button onclick="closeSettingsModal()" style="border:none;background:none;font-size:24px;cursor:pointer">✕</button>
     </div>
     
     <div style="margin-bottom:20px">
-      <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px">📂 Select Categories</div>
+      <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px">📂 Category Cards</div>
       <div style="display:flex;flex-direction:column;gap:8px">`;
   allCats.forEach(cat=>{const checked=gs.categories.length===0||gs.categories.includes(cat.id);
     h+=`<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px;border-radius:8px;background:var(--bg);font-size:14px">
@@ -39,13 +45,38 @@ async function showGameSettings(gameName){
     </label>`});
   h+=`</div></div>
     
-    <div style="margin-bottom:20px">
-      <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px">🖼️ Upload Custom Image</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <input type="file" id="customImgInput" accept="image/*" style="padding:8px;border-radius:8px;border:2px solid var(--brd);font-size:13px">
-        <button onclick="uploadCustomImg('${gameName}')" class="btn btn-p btn-sm">Upload</button>
+    <div style="margin-bottom:20px;border-top:1px solid var(--brd);padding-top:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px">➕ Upload Custom Card</div>
+      <div style="display:flex;flex-direction:column;gap:10px;background:var(--bg);padding:12px;border-radius:12px">
+        <div>
+          <div style="font-size:12px;color:var(--txt3);margin-bottom:4px">🖼️ Image</div>
+          <input type="file" id="custImgInput" accept="image/*" style="width:100%;padding:6px;border-radius:8px;border:1px solid var(--brd);font-size:12px">
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--txt3);margin-bottom:4px">ਗੁਰਮੁਖੀ (Gurmukhi)</div>
+          <input type="text" id="custGurInput" placeholder="ਸ਼ਬਦ" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--brd);font-size:13px;color:var(--txt);background:var(--card)">
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--txt3);margin-bottom:4px">English</div>
+          <input type="text" id="custEngInput" placeholder="word" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--brd);font-size:13px;color:var(--txt);background:var(--card)">
+        </div>
+        <button onclick="addCustomCard('${gameName}')" class="btn btn-p btn-sm" style="width:100%">➕ Add Card</button>
       </div>
     </div>
+    
+    ${gs.customCards&&gs.customCards.length>0?`<div style="margin-bottom:20px;border-top:1px solid var(--brd);padding-top:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--txt2);margin-bottom:10px">📋 Your Custom Cards (${gs.customCards.length})</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${gs.customCards.map((c,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:var(--bg)">
+          ${c.imageUrl?`<img src="${c.imageUrl}" style="width:40px;height:40px;border-radius:6px;object-fit:cover">`:``}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--txt)">${c.gurmukhi}</div>
+            <div style="font-size:11px;color:var(--txt3)">${c.english}</div>
+          </div>
+          <button onclick="delCustomCard('${gameName}',${i})" style="padding:4px 8px;border:none;background:var(--red);color:#fff;border-radius:6px;font-size:12px;cursor:pointer">✕</button>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
     
     <div style="display:flex;gap:8px;margin-top:20px">
       <button onclick="closeSettingsModal()" class="btn btn-s flex-1">Cancel</button>
@@ -55,8 +86,29 @@ async function showGameSettings(gameName){
   app.innerHTML=h}
 
 function toggleGameCat(gameName,catId){GameSettings.toggleCategory(gameName,catId)}
-async function uploadCustomImg(gameName){const file=document.getElementById('customImgInput').files[0];if(!file){toast('Select image','err');return}
-  toast('Upload feature coming soon','info')}
+async function addCustomCard(gameName){
+  const imgInput=document.getElementById('custImgInput');
+  const gurInput=document.getElementById('custGurInput');
+  const engInput=document.getElementById('custEngInput');
+  
+  const gur=gurInput.value.trim();
+  const eng=engInput.value.trim();
+  
+  if(!gur||!eng){toast('Fill Gurmukhi and English','err');return}
+  if(!imgInput.files[0]){toast('Select image','err');return}
+  
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const imageUrl=e.target.result;
+    const card={gurmukhi:gur,english:eng,imageUrl:imageUrl};
+    GameSettings.addCustomCard(gameName,card);
+    gurInput.value='';engInput.value='';imgInput.value='';
+    toast('Card added!','ok');
+    showGameSettings(gameName);
+  };
+  reader.readAsDataURL(imgInput.files[0]);
+}
+function delCustomCard(gameName,idx){GameSettings.removeCustomCard(gameName,idx);showGameSettings(gameName)}
 function saveGameSettings(gameName){GameSettings.save(gameName);toast('Settings saved','ok');closeSettingsModal();rSGames()}
 function closeSettingsModal(){S.tab='games';R()}
 
@@ -276,7 +328,6 @@ async function endMem(){clearInterval(memTimer);memTimer=null;
   <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stMem()">🔄 Again</button></div>`}
 
 // Spin the Wheel Game
-const SPIN_COLORS=['#3B82F6','#8B5CF6','#2ECC71','#F59E0B','#EC4899','#06B6D4'];
 let spinCards=[],spinRound=0,spinTotal=5,spinScore=0,spinStart=0,spinBusy=false,spinCurIdx=-1;
 
 async function stSpin(){hideNav();app.innerHTML='<div class="loading"><div class="loader"></div></div>';
@@ -287,80 +338,116 @@ async function stSpin(){hideNav();app.innerHTML='<div class="loading"><div class
 
 function rSpinWheel(){hideNav();
   const seg=spinCards.length;const segAngle=360/seg;
-  // Build conic gradient
-  let grad='conic-gradient(';spinCards.forEach((c,i)=>{const s=i*segAngle,e=(i+1)*segAngle;
-    grad+=SPIN_COLORS[i%SPIN_COLORS.length]+' '+s+'deg '+e+'deg';if(i<seg-1)grad+=','});grad+=')';
+  // Build card positions around wheel - will rotate together
+  let cardHTML='';const radius=110;const cx=130,cy=130;
+  spinCards.forEach((c,i)=>{
+    const angle=(i*segAngle+segAngle/2)*Math.PI/180;
+    const x=cx+radius*Math.sin(angle);
+    const y=cy-radius*Math.cos(angle);
+    const rot=i*segAngle+segAngle/2;
+    cardHTML+=`<div style="position:absolute;left:${x-20}px;top:${y-20}px;width:40px;height:40px;border-radius:8px;background:var(--card2);border:2px solid var(--saf);overflow:hidden;display:flex;align-items:center;justify-content:center;z-index:2;transform-origin:${130-x}px ${130-y}px">
+      ${c.imageUrl?`<img src="${c.imageUrl}" style="width:100%;height:100%;object-fit:cover">`:`<div style="font-size:20px">📚</div>`}
+    </div>`});
 
   let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="S.view='home';S.tab='games';R()">✕</button>
   <div class="sub">🎡 ${t('spinWheel')} · ${spinRound}/${spinTotal}</div>
   <div style="font-size:16px;font-weight:800;color:var(--saf)">⭐${spinScore}</div></div>
-  <div class="spin-stage">
+  <div class="spin-stage" style="position:relative;width:280px;height:280px;margin:0 auto 30px">
     <div class="spin-pointer">▼</div>
-    <div class="spin-wheel" id="spinW" style="background:${grad}">
-      <div class="spin-center">🎡</div>
+    <div id="spinW" style="width:260px;height:260px;border-radius:50%;position:absolute;top:10px;left:10px;border:4px solid var(--saf);background:conic-gradient(
+      ${spinCards.map((c,i)=>{const angle=i*360/seg;return`from ${angle}deg, var(--card3) 0deg ${angle+360/seg}deg`}).join(',')}
+    );transform:rotate(0deg);transition:none;will-change:transform">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;background:var(--bg);border:3px solid var(--saf);display:flex;align-items:center;justify-content:center;font-size:24px;z-index:5">🎡</div>
+      ${cardHTML}
     </div>
-  </div>
-  <div id="spinArea">
-    <button class="btn btn-p btn-w spin-go" id="spinBtn" onclick="doSpin()">🎡 SPIN!</button>
   </div>`;
+  if(!spinBusy){h+=`<button class="btn btn-p btn-w spin-go" id="spinBtn" onclick="doSpin()" style="margin-top:20px">🎡 SPIN!</button>`}
   app.innerHTML=h}
 
 function doSpin(){
   if(spinBusy)return;spinBusy=true;
-  const btn=$('spinBtn');if(btn)btn.disabled=true;
+  const btn=$('spinBtn');if(btn)btn.style.display='none';
   const seg=spinCards.length,segAngle=360/seg;
-  // Pick random target
   spinCurIdx=Math.floor(Math.random()*seg);
-  // Calculate rotation: land center of target segment at top (pointer)
-  const landAngle=spinCurIdx*segAngle+segAngle/2;
+  // Rotate so selected card lands at TOP (angle 0)
+  const cardAngle=spinCurIdx*segAngle+segAngle/2;
   const fullTurns=5+Math.floor(Math.random()*3);
-  const totalDeg=fullTurns*360+landAngle;
+  const totalDeg=fullTurns*360+(360-cardAngle);
   const wheel=$('spinW');
-  if(wheel){wheel.style.transition='transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-    wheel.style.transform='rotate('+totalDeg+'deg)'}
-  // After spin completes - no auto audio play
-  setTimeout(()=>{
-    setTimeout(()=>showSpinQ(spinCards[spinCurIdx]),200)
-  },4200)}
+  if(wheel){
+    wheel.style.transition='none';
+    wheel.style.transform='rotate(0deg)';
+    setTimeout(()=>{
+      wheel.style.transition='transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+      wheel.style.transform='rotate('+totalDeg+'deg)';
+    },10);
+  }
+  setTimeout(()=>{showSpinCard(spinCards[spinCurIdx])},4200)}
 
-function showSpinQ(card){
-  // Show Gurmukhi word prominently (BOLD), image, then 4 English choices
-  const wrongs=shuf(spinCards.filter(c=>c.id!==card.id)).slice(0,3);
-  const opts=shuf([card,...wrongs]);
-  let h=`<div class="spin-reveal-word">
-    <div class="spin-gur-big" style="font-size:48px;font-weight:900;color:var(--pur);margin-bottom:16px;letter-spacing:2px">${card.gurmukhi}</div>
-    ${card.imageUrl?'<img src="'+card.imageUrl+'" style="width:160px;height:160px;border-radius:16px;object-fit:cover;border:4px solid var(--pur);margin-bottom:16px">':''}
-    <div style="font-size:18px;font-weight:700;color:var(--txt)">${card.english}</div>
-    ${card.audioUrl?'<button class="audio-btn" onclick="playA(\''+card.audioUrl+'\')" style="width:48px;height:48px;font-size:20px;margin-top:10px">🔊</button>':''}
+function showSpinCard(card){
+  spinScore++;
+  let h=`<div class="flex justify-between items-center mb-14"><button class="back" style="margin:0" onclick="nextSpinRound()">✕</button>
+  <div class="sub">🎡 ${t('spinWheel')} · ${spinRound+1}/${spinTotal}</div>
+  <div style="font-size:16px;font-weight:800;color:var(--saf)">⭐${spinScore}</div></div>
+  <div style="text-align:center;padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh">
+    ${card.imageUrl?`<img src="${card.imageUrl}" style="width:200px;height:200px;border-radius:20px;object-fit:cover;border:6px solid var(--pur);box-shadow:0 0 30px rgba(139,92,246,.5);margin-bottom:20px;animation:zoomIn .6s ease-out">`:''}
+    <div style="font-size:56px;font-weight:900;color:var(--pur);margin-bottom:10px;letter-spacing:2px;animation:slideDown .6s ease-out">${card.gurmukhi}</div>
+    <div style="font-size:18px;color:var(--txt2);margin-top:20px">${card.english}</div>
   </div>
-  <div class="sub text-center mb-8" style="margin-top:16px">${t('pickEnglish')}</div>
-  <div class="spin-opts">`;
-  opts.forEach(c=>{h+=`<button class="spin-opt spin-opt-eng-btn" id="so_${c.id}" onclick="spinAns('${c.id}','${card.id}')">${c.english}${c.imageUrl?'<img src="'+c.imageUrl+'" class="spin-opt-thumb">':''}</button>`});
-  h+='</div>';$('spinArea').innerHTML=h}
+  <div class="flex gap-8" style="padding:0 20px 20px">
+    <button class="btn btn-p btn-w" onclick="nextSpinRound()">Next Round →</button>
+  </div>`;
+  app.innerHTML=h;
+  // Fall stars
+  fallStars()}
 
-function spinAns(cid,corId){
-  if(!spinBusy)return;
-  const ok=cid===corId;
-  const el=$('so_'+cid);if(el)el.classList.add(ok?'spin-ok':'spin-no');
-  if(!ok){const cel=$('so_'+corId);if(cel)cel.classList.add('spin-ok')}
-  if(ok){spinScore++;flash('ok')}else flash('no');
+function nextSpinRound(){
   spinRound++;
-  setTimeout(()=>{
-    spinBusy=false;
-    if(spinRound>=spinTotal){endSpin();return}
-    const wheel=$('spinW');if(wheel){wheel.style.transition='none';wheel.style.transform='rotate(0deg)'}
-    rSpinWheel()},1200)}
+  if(spinRound>=spinTotal){endSpinGame();return}
+  spinBusy=false;
+  rSpinWheel()}
 
-async function endSpin(){
-  const tm=Math.round((Date.now()-spinStart)/1000);const pct=Math.round(spinScore/spinTotal*100);
-  let em;if(pct>=90)em='🎡';else if(pct>=70)em='🌟';else if(pct>=50)em='💪';else em='📚';
-  const xpE=spinScore*15+(pct===100?50:0);
+async function endSpinGame(){
+  const tm=Math.round((Date.now()-spinStart)/1000);
+  const xpE=spinScore*15;
   await recAct('quiz_complete',{categoryName:'Spin Wheel',score:spinScore,total:spinTotal,timeSpent:tm});
-  await addXP(S.uid,xpE);await updStreak(S.uid);if(pct===100)confetti();await chkBadges(S.uid);
-  app.innerHTML=`<div class="text-center" style="padding:30px 0"><div style="font-size:72px">${em}</div>
-  <div style="font-size:48px;font-weight:900;color:var(--saf);margin:10px 0">${spinScore}/${spinTotal}</div>
-  <div class="sub">${pct}% · ${tm}s · +${xpE} XP</div></div>
-  <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stSpin()">🔄 Again</button></div>`}
+  await addXP(S.uid,xpE);await updStreak(S.uid);
+  if(spinScore===spinTotal)confetti();await chkBadges(S.uid);
+  app.innerHTML=`<div class="text-center" style="padding:40px 20px">
+    <div style="font-size:72px;margin-bottom:20px">🎡</div>
+    <div style="font-size:48px;font-weight:900;color:var(--saf);margin-bottom:10px">${spinScore}/${spinTotal}</div>
+    <div class="sub" style="margin-bottom:20px">+${xpE} XP</div>
+    ${spinScore===spinTotal?'<div style="font-size:24px;margin-bottom:20px">⭐⭐⭐ PERFECT! ⭐⭐⭐</div>':''}
+    <div class="flex gap-8"><button class="btn btn-s flex-1" onclick="S.view='home';S.tab='games';R()">🏠</button><button class="btn btn-p flex-1" onclick="stSpin()">🔄 Again</button></div>
+  </div>`}
+
+function fallStars(){
+  for(let i=0;i<30;i++){
+    const s=document.createElement('div');
+    s.innerHTML='⭐';
+    s.style.position='fixed';
+    s.style.left=Math.random()*100+'%';
+    s.style.top='-30px';
+    s.style.fontSize='24px';
+    s.style.pointerEvents='none';
+    s.style.animation=`fall ${1+Math.random()*1.5}s linear forwards`;
+    s.style.zIndex='9000';
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),3000);
+  }
+}
+
+// Add CSS animation for falling stars
+if(!document.getElementById('spinAnimStyle')){
+  const style=document.createElement('style');
+  style.id='spinAnimStyle';
+  style.innerHTML=`
+    @keyframes fall{0%{opacity:1;transform:translateY(0) rotate(0deg)}100%{opacity:0;transform:translateY(100vh) rotate(360deg)}}
+    @keyframes zoomIn{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
+    @keyframes slideDown{0%{transform:translateY(-30px);opacity:0}100%{transform:translateY(0);opacity:1}}
+  `;
+  document.head.appendChild(style);
+}
 
 // Student Quiz
 function rSQuizList(){let h=`<div class="topbar"><div class="h2">🎮 ${t('quiz')}</div></div>`;

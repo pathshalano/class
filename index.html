@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style_final.css">
 </head>
 <body>
 <div class="app" id="app">
@@ -30,9 +30,9 @@ window._onFileLoad=function(n){window._loaded[n]=true;var e=document.getElementB
 window._onFileError=function(n){document.getElementById('app').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px">❌</div><h2 style="color:#F8FAFC">Failed: '+n+'</h2><p style="color:#64748B;font-size:13px">File missing: <b>'+n+'.js</b></p></div>'};
 </script>
 
-<script src="app.js" onload="_onFileLoad('app')" onerror="_onFileError('app')"></script>
+<script src="app_final.js" onload="_onFileLoad('app')" onerror="_onFileError('app')"></script>
 <script src="admin.js" onload="_onFileLoad('admin')" onerror="_onFileError('admin')"></script>
 <script src="teacher.js" onload="_onFileLoad('teacher')" onerror="_onFileError('teacher')"></script>
-<script src="student.js" onload="_onFileLoad('student')" onerror="_onFileError('student')"></script>
+<script src="student_final.js" onload="_onFileLoad('student')" onerror="_onFileError('student')"></script>
 </body>
 </html>

@@ -521,4 +521,200 @@ async function rSProfile(){const sD=await db.collection('students').doc(S.uid).g
   <button class="btn btn-d btn-w" onclick="doLogout()">🚪 ${t('logout')}</button>`}
 
 // ============ START APP (all files loaded) ============
+
+// ====================== PARENT DASHBOARD ======================
+function rParent(){
+  showNav([{id:'home',ico:'🏠',label:t('home')},{id:'attendance',ico:'📋',label:t('attendance')},{id:'messages',ico:'💬',label:t('messages')},{id:'progress',ico:'📈',label:t('progress')}]);
+  if(S.tab==='home')rPHome();else if(S.tab==='attendance')rPAtt();else if(S.tab==='messages')rPMsg();else if(S.tab==='progress')rPProgress();else rPHome()}
+
+async function rPHome(){
+  // Refresh child data
+  try{const d=await db.collection('students').doc(S.pChildId).get();if(d.exists)S.pChild=d.data()}catch(e){}
+  const c=S.pChild;if(!c){app.innerHTML='<div class="empty"><p>No child data</p></div>';return}
+  const xi=xpInfo(c.xp||0);
+  const daysSincePractice=c.lastPracticeDate?Math.floor((Date.now()-new Date(c.lastPracticeDate+'T12:00:00').getTime())/(86400000)):999;
+  let h=`<div class="topbar"><div class="topbar-left"><div class="topbar-avatar" style="background:linear-gradient(135deg,var(--warn),var(--saf))">${S.logo?'<img src="'+S.logo+'">':(c.name||'C')[0]}</div>
+  <div class="topbar-info"><div class="name">👪 ${S.uname}</div><div class="greeting">${c.name}'s parent</div></div></div>
+  <div class="topbar-actions">${langSel()}<button class="btn btn-s btn-sm" onclick="doLogout()">🚪 ${t('logout')}</button></div></div>`;
+  // Practice nudge
+  if(daysSincePractice>2&&daysSincePractice<999){h+=`<div class="panel" style="border:1.5px solid var(--warn);background:rgba(245,158,11,.05)"><div class="flex items-center gap-8"><span style="font-size:20px">💡</span><div class="h3" style="color:var(--warn)">${c.name} hasn't practiced in ${daysSincePractice} days</div></div><p class="sub2" style="margin-top:4px">Encourage them to open the app and practice!</p></div>`}
+  // Child card
+  h+=`<div class="panel"><div style="text-align:center"><div class="avatar av-grn" style="width:56px;height:56px;font-size:24px;border-radius:18px;margin:0 auto">${(c.name||'C')[0]}</div>
+  <div class="h2" style="margin-top:8px">${c.name}</div>
+  <div class="sub">Level ${xi.level} · ${xi.name}</div></div>
+  <div class="xp-bar" style="margin-top:12px"><div class="xp-fill" style="width:${xi.progress}%"></div></div>
+  <div class="sub2" style="text-align:center;margin-top:4px">${c.xp||0} / ${xi.needed} XP</div></div>`;
+  // Stats
+  h+=`<div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">${xi.level}</div><div class="score-lbl">${t('level')}</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--warn)">🔥${c.streak||0}</div><div class="score-lbl">${t('streak')}</div></div>
+  <div class="score-card"><div class="score-val" style="color:var(--pur)">${(c.badges||[]).length}</div><div class="score-lbl">${t('badges')}</div></div></div>`;
+  // Badges
+  if((c.badges||[]).length){h+=`<div class="panel"><div class="panel-title">🏅 ${t('badges')}</div><div class="flex gap-8" style="flex-wrap:wrap">`;
+    (c.badges||[]).forEach(bid=>{const b=BADGES.find(x=>x.id===bid);if(b)h+=`<div style="text-align:center;padding:8px"><div style="font-size:28px">${b.ico}</div><div class="sub2">${b.name}</div></div>`});h+='</div></div>'}
+  // Word of the day
+  h+=`<div id="pWod"></div>`;
+  // Quick actions
+  h+=`<div class="dash-grid">
+  <div class="dash-card dc-cyan" onclick="S.tab='attendance';R()"><div class="dc-icon">📋</div><div class="dc-title">${t('attendance')}</div><div class="dc-sub">View & report</div></div>
+  <div class="dash-card dc-orange" onclick="S.tab='messages';R()"><div class="dc-icon">💬</div><div class="dc-title">${t('messages')}</div><div class="dc-sub">Teacher & school</div></div></div>`;
+  app.innerHTML=h;
+  // Load WoD
+  setTimeout(async()=>{try{const today=new Date().toISOString().split('T')[0];
+    const ws=await db.collection('wordOfDay').where('teacherId','==',S.pTeacherId).where('date','==',today).get();
+    const el=$('pWod');if(!el||ws.empty)return;const w=ws.docs[0].data();
+    el.innerHTML=`<div class="panel"><div class="panel-title">✨ ${t('wordOfDay')}</div>
+    <div style="text-align:center;padding:12px 0">${w.imageUrl?'<img src="'+w.imageUrl+'" style="width:80px;height:80px;border-radius:12px;object-fit:cover;margin-bottom:8px">':''}
+    <div style="font-size:28px;font-weight:900">${w.gurmukhi}</div><div class="sub" style="margin-top:4px">${w.english}</div>
+    ${w.audioUrl?'<button class="btn btn-s btn-sm" style="margin-top:8px" onclick="playA(\''+w.audioUrl+'\')">🔊 Listen</button>':''}</div></div>`}catch(e){}},100)}
+
+// ============ PARENT ATTENDANCE ============
+async function rPAtt(){
+  const today=new Date().toISOString().split('T')[0];
+  const c=S.pChild;
+  let h=`<div class="topbar"><div class="h2">📋 ${t('attendance')}</div></div>`;
+  // Report absence button
+  h+=`<div class="panel" style="background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(236,72,153,.08));border:1px solid rgba(245,158,11,.2)">
+  <div class="panel-title">📝 ${t('reportAbsence')}</div>
+  <div class="fld"><label class="lbl">Date</label><input class="inp" id="abDate" type="date" value="${today}"></div>
+  <div class="fld"><label class="lbl">${t('reason')}</label><select class="inp" id="abReason">
+  <option value="sick">🤒 ${t('sick')}</option><option value="not-coming">🚫 Not Coming</option><option value="family">👨‍👩‍👦 ${t('family')}</option><option value="appointment">🏥 ${t('appointment')}</option><option value="vacation">✈️ Vacation</option><option value="other">📋 ${t('other')}</option></select></div>
+  <div class="fld"><label class="lbl">Note (optional)</label><input class="inp" id="abNote" placeholder="e.g. not coming next Friday..."></div>
+  <button class="btn btn-p btn-w" onclick="submitAbsence()">📝 Submit</button></div>`;
+  // This month's attendance
+  h+=`<div class="panel"><div class="panel-title">📊 This Month</div><div id="pAttBody"><div class="loading"><div class="loader"></div></div></div></div>`;
+  // Recent absence reports
+  h+=`<div class="panel"><div class="panel-title">📝 My Reports</div><div id="pAbsBody"><div class="loading"><div class="loader"></div></div></div></div>`;
+  app.innerHTML=h;
+  setTimeout(loadPAtt,100);setTimeout(loadPAbsReports,200)}
+
+async function submitAbsence(){
+  const date=$('abDate').value,reason=$('abReason').value,note=$('abNote').value.trim();
+  if(!date)return toast('Select date','err');
+  // Check if already reported
+  const ex=await db.collection('absenceReports').where('studentId','==',S.pChildId).where('date','==',date).get();
+  if(!ex.empty)return toast('Already reported for this date','err');
+  await db.collection('absenceReports').add({studentId:S.pChildId,studentName:S.pChild.name,parentId:S.uid,parentName:S.uname,teacherId:S.pTeacherId,orgId:S.orgId,date,reason,note,timestamp:Date.now()});
+  toast('Absence reported ✅');rPAtt()}
+
+async function loadPAtt(){const el=$('pAttBody');if(!el)return;
+  const now=new Date();const month=now.toISOString().substring(0,7);
+  try{const snap=await db.collection('attendance').where('teacherId','==',S.pTeacherId).where('date','>=',month+'-01').where('date','<=',month+'-31').get();
+    if(snap.empty){el.innerHTML='<p class="sub2">No attendance data this month</p>';return}
+    let present=0,absent=0,total=0;
+    snap.docs.forEach(d=>{const rec=(d.data().records||[]).find(r=>r.studentId===S.pChildId);if(rec){total++;if(rec.status==='present')present++;if(rec.status==='absent')absent++}});
+    const rate=total?Math.round(present/total*100):0;const color=rate>=80?'var(--grn)':rate>=60?'var(--warn)':'var(--red)';
+    el.innerHTML=`<div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--grn)">${present}</div><div class="score-lbl">${t('present')}</div></div>
+    <div class="score-card"><div class="score-val" style="color:var(--red)">${absent}</div><div class="score-lbl">${t('absent')}</div></div>
+    <div class="score-card"><div class="score-val" style="color:${color}">${rate}%</div><div class="score-lbl">Rate</div></div></div>
+    <div class="att-stat-bar" style="margin-top:8px"><div class="att-fill" style="width:${rate}%;background:${color}"></div></div>`}
+  catch(e){el.innerHTML='<p class="sub2">Could not load</p>'}}
+
+async function loadPAbsReports(){const el=$('pAbsBody');if(!el)return;
+  try{const snap=await db.collection('absenceReports').where('studentId','==',S.pChildId).get();
+    const reports=snap.docs.map(d=>({id:d.id,...d.data()}));reports.sort((a,b)=>b.timestamp-a.timestamp);
+    if(!reports.length){el.innerHTML='<p class="sub2">No reports</p>';return}
+    let h='';reports.slice(0,10).forEach(r=>{const reasons={sick:'🤒 Sick','not-coming':'🚫 Not Coming',family:'👨‍👩‍👦 Family',appointment:'🏥 Appointment',vacation:'✈️ Vacation',other:'📋 Other'};
+      h+=`<div style="padding:8px 0;border-bottom:1px solid var(--brd);font-size:13px"><div class="flex justify-between"><b>${r.date}</b><span>${reasons[r.reason]||r.reason}</span></div>${r.note?'<div class="sub2">'+r.note+'</div>':''}</div>`});
+    el.innerHTML=h}catch(e){el.innerHTML='<p class="sub2">Could not load</p>'}}
+
+// ============ PARENT MESSAGES ============
+async function rPMsg(){
+  // Count unread per contact
+  const allUnrd=await db.collection('messages').where('toId','==',S.uid).where('read','==',false).get();
+  const unrdMap={};allUnrd.docs.forEach(d=>{const fid=d.data().fromId;unrdMap[fid]=(unrdMap[fid]||0)+1});
+  let h=`<div class="topbar"><div class="h2">💬 ${t('messages')}</div></div>`;
+  const tU=unrdMap[S.pTeacherId]||0;const aU=unrdMap['admin']||0;
+  // Teacher chat
+  h+=`<div class="list-item clickable" onclick="pChat('${S.pTeacherId}','${esc(S.pTeacherName)}','teacher')">
+  <div class="avatar av-blu">👩‍🏫</div><div class="flex-1"><div class="h3">${S.pTeacherName||'Teacher'}${tU?'<span class="unread-badge">'+tU+'</span>':''}</div><div class="sub2">${S.pChild?.name}'s teacher</div></div></div>`;
+  // School admin chat
+  h+=`<div class="list-item clickable" onclick="pChat('admin','School Admin','admin')">
+  <div class="avatar av-pur">🛡️</div><div class="flex-1"><div class="h3">School Admin${aU?'<span class="unread-badge">'+aU+'</span>':''}</div><div class="sub2">School administration</div></div></div>`;
+  // Show all messages timeline
+  h+=`<div class="sec-title" style="margin-top:14px">📨 Recent</div><div id="pMsgList"><div class="loading"><div class="loader"></div></div></div>`;
+  app.innerHTML=h;setTimeout(loadPMsgTimeline,100)}
+
+async function loadPMsgTimeline(){const el=$('pMsgList');if(!el)return;
+  try{const s1=await db.collection('messages').where('toId','==',S.uid).get();
+    const s2=await db.collection('messages').where('fromId','==',S.uid).get();
+    const all=[...s1.docs.map(d=>({id:d.id,...d.data()})),...s2.docs.map(d=>({id:d.id,...d.data()}))];
+    all.sort((a,b)=>b.timestamp-a.timestamp);
+    const unique={};all.forEach(m=>{const other=m.fromId===S.uid?m.toId:m.fromId;if(!unique[other])unique[other]=m});
+    const recent=Object.values(unique).slice(0,10);
+    if(!recent.length){el.innerHTML='<div class="empty"><p>'+t('noMessages')+'</p></div>';return}
+    let h='';recent.forEach(m=>{const sent=m.fromId===S.uid;const name=sent?m.toName:m.fromName;const preview=m.text.length>50?m.text.substring(0,50)+'...':m.text;
+      const tagHtml=m.tag&&m.tag!=='general'?'<span class="tag tag-org" style="font-size:9px;margin-left:4px">'+m.tag+'</span>':'';
+      const unreadDot=!sent&&!m.read?'<span style="width:8px;height:8px;border-radius:50%;background:var(--blu);display:inline-block;margin-left:4px"></span>':'';
+      h+=`<div class="list-item" style="cursor:pointer" onclick="pChat('${m.fromId===S.uid?m.toId:m.fromId}','${esc(name)}')">
+      <div class="flex-1"><div class="h3">${name} ${tagHtml}${unreadDot}</div><div class="sub2">${sent?'You: ':''}${preview} · ${tSince(m.timestamp)}</div></div></div>`});
+    el.innerHTML=h}catch(e){el.innerHTML='<p class="sub2">Could not load</p>'}}
+
+async function pChat(otherId,otherName){
+  app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  await markRd(S.uid,otherId);const msgs=await getMsgs(S.uid,otherId);
+  let h=`<button class="back" onclick="S.tab='messages';R()">← ${t('back')}</button>
+  <div class="panel"><div class="panel-title">💬 ${otherName}</div><div class="msg-list" id="mL">`;
+  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';
+  else msgs.forEach(m=>{const s=m.fromId===S.uid;h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'} ${s&&m.read?'msg-read':''}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}${m.tag&&m.tag!=='general'?'<span class="tag tag-org" style="margin-left:6px;font-size:9px">'+m.tag+'</span>':''}
+  <div class="msg-time">${fmt(m.timestamp)}${s?(m.read?' ✅':' ◻️'):''}</div></div>`});
+  h+=`</div><div class="msg-compose"><input class="inp" id="mI" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sndParentMsg('${otherId}','${esc(otherName)}')">
+  <button class="btn btn-p btn-sm" onclick="sndParentMsg('${otherId}','${esc(otherName)}')">${t('send')}</button></div></div>`;
+  app.innerHTML=h;const l=$('mL');if(l)l.scrollTop=l.scrollHeight}
+async function sndParentMsg(otherId,otherName){const x=$('mI').value.trim();if(!x)return;$('mI').value='';
+  await sendMsg(S.uid,S.uname,'parent',otherId,otherName,x);pChat(otherId,otherName)}
+
+// ============ PARENT PROGRESS ============
+async function rPProgress(){
+  app.innerHTML='<div class="loading"><div class="loader"></div><p>Loading progress...</p></div>';
+  try{const c=S.pChild;
+    // Get activity history
+    const aSnap=await db.collection('activity').where('studentId','==',S.pChildId).get();
+    const acts=aSnap.docs.map(d=>d.data());acts.sort((a,b)=>b.timestamp-a.timestamp);
+    const qz=acts.filter(a=>a.type==='quiz_complete');
+    const prac=acts.filter(a=>a.type==='practice');
+    const tSc=qz.reduce((s,q)=>s+(q.score||0),0),tQ=qz.reduce((s,q)=>s+(q.total||0),0);
+    const acc=tQ?Math.round(tSc/tQ*100):0;
+    // Weekly stats
+    const weekAgo=Date.now()-7*86400000;
+    const weekActs=acts.filter(a=>a.timestamp>weekAgo);
+    const weekQz=weekActs.filter(a=>a.type==='quiz_complete');
+    const weekPrac=weekActs.filter(a=>a.type==='practice');
+    const weekCards=weekPrac.reduce((s,a)=>s+(a.cardsViewed||0),0);
+
+    let h=`<div class="topbar"><div class="h2">📈 ${t('progress')}</div></div>`;
+    // Weekly summary
+    h+=`<div class="panel"><div class="panel-title">📊 This Week</div>
+    <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">${weekQz.length}</div><div class="score-lbl">${t('quizzes')}</div></div>
+    <div class="score-card"><div class="score-val" style="color:var(--blu)">${weekCards}</div><div class="score-lbl">${t('cards')}</div></div>
+    <div class="score-card"><div class="score-val" style="color:var(--grn)">${weekActs.length}</div><div class="score-lbl">Activities</div></div></div></div>`;
+    // Overall stats
+    h+=`<div class="panel"><div class="panel-title">📈 All Time</div>
+    <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">${qz.length}</div><div class="score-lbl">${t('quizzes')}</div></div>
+    <div class="score-card"><div class="score-val" style="color:var(--grn)">${acc}%</div><div class="score-lbl">${t('accuracy')}</div></div>
+    <div class="score-card"><div class="score-val" style="color:var(--warn)">🔥${c.streak||0}</div><div class="score-lbl">${t('streak')}</div></div></div></div>`;
+    // Attendance this month
+    const now=new Date();const month=now.toISOString().substring(0,7);
+    try{const attSnap=await db.collection('attendance').where('teacherId','==',S.pTeacherId).where('date','>=',month+'-01').where('date','<=',month+'-31').get();
+      let present=0,absent=0,attTotal=0;
+      attSnap.docs.forEach(d=>{const rec=(d.data().records||[]).find(r=>r.studentId===S.pChildId);if(rec){attTotal++;if(rec.status==='present')present++;if(rec.status==='absent')absent++}});
+      const rate=attTotal?Math.round(present/attTotal*100):0;
+      h+=`<div class="panel"><div class="panel-title">📋 Attendance (${now.toLocaleDateString(undefined,{month:'long'})})</div>
+      <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--grn)">${present}</div><div class="score-lbl">${t('present')}</div></div>
+      <div class="score-card"><div class="score-val" style="color:var(--red)">${absent}</div><div class="score-lbl">${t('absent')}</div></div>
+      <div class="score-card"><div class="score-val">${rate}%</div><div class="score-lbl">Rate</div></div></div></div>`}catch(e){}
+    // Recent activity timeline
+    h+=`<div class="panel"><div class="panel-title">🕐 Recent Activity</div>`;
+    if(!acts.length)h+='<p class="sub2">No activity yet</p>';
+    else{const recent=acts.slice(0,15);recent.forEach(a=>{
+      const icons={quiz_complete:'🎮',practice:'📚',game_complete:'🎲'};
+      const labels={quiz_complete:'Quiz',practice:'Practice',game_complete:'Game'};
+      let detail='';if(a.type==='quiz_complete')detail=`Score: ${a.score}/${a.total}`;
+      else if(a.type==='practice')detail=`${a.cardsViewed||0} cards`;
+      else if(a.type==='game_complete')detail=a.gameName||'';
+      h+=`<div style="padding:8px 0;border-bottom:1px solid var(--brd);font-size:13px"><div class="flex justify-between items-center">
+      <div>${icons[a.type]||'📌'} <b>${labels[a.type]||a.type}</b> ${detail}</div><span class="sub2">${tSince(a.timestamp)}</span></div></div>`})}
+    h+='</div>';app.innerHTML=h}
+  catch(e){app.innerHTML=`<div class="topbar"><div class="h2">📈 ${t('progress')}</div></div><div class="empty"><p>Could not load progress</p></div>`}}
+
+// ============ START APP (all files loaded) ============
 init();

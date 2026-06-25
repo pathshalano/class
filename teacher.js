@@ -12,9 +12,10 @@ function rTeacher(){
 
 function rTHome(){
   const crs=(S.tData?.classroomIds||[]).map(id=>getCR(id)).join(', ')||'';
+  const typeBadge=S.tData?.type==='vikar'?'<span class="tag tag-org">Vikar</span>':'';
   let h=`<div class="topbar"><div class="topbar-left"><div class="topbar-avatar" style="background:linear-gradient(135deg,var(--blu),var(--pur))">${S.logo?'<img src="'+S.logo+'">':(S.uname||'T')[0]}</div>
-  <div class="topbar-info"><div class="name">${S.uname} 👋</div><div class="greeting">${crs||'Teacher Dashboard'}</div></div></div>
-  <div class="topbar-actions">${langSel()}</div></div>
+  <div class="topbar-info"><div class="name">${S.uname} ${typeBadge}</div><div class="greeting">${crs||'Teacher Dashboard'}</div></div></div>
+  <div class="topbar-actions">${langSel()}<button class="btn btn-s btn-sm" onclick="doLogout()">🚪 ${t('logout')}</button></div></div>
   <div class="dash-grid">
     <div class="dash-card dc-green" onclick="S.tab='cards';R()"><div class="dc-icon">📚</div><div class="dc-title">${t('cards')}</div><div class="dc-sub">${S.cards.length} cards</div></div>
     <div class="dash-card dc-blue" onclick="S.tab='categories';R()"><div class="dc-icon">📁</div><div class="dc-title">${t('categories')}</div><div class="dc-sub">Organize topics</div></div>
@@ -73,7 +74,7 @@ async function svNewCrd(){const cat=$('cC').value,g=$('cG').value.trim(),e=$('cE
   if(!g||!e)return toast(t('fillAll'),'err');const btn=$('svB');btn.disabled=true;
   try{let iu='',au='',iu2='',iu3='';if(img){btn.textContent='📸...';iu=await compImg(img)}if(img2){iu2=await compImg(img2)}if(img3){iu3=await compImg(img3)}
     if(recBlob){btn.textContent='🔊...';au=await b64(recBlob)}
-    await db.collection('cards').add({categoryId:cat,gurmukhi:g,english:e,imageUrl:iu,imageUrl2:iu2||'',imageUrl3:iu3||'',audioUrl:au,teacherId:S.uid,createdAt:Date.now()});
+    await db.collection('cards').add({categoryId:cat,gurmukhi:g,english:e,imageUrl:iu,imageUrl2:iu2||'',imageUrl3:iu3||'',audioUrl:au,teacherId:S.uid,orgId:S.orgId,createdAt:Date.now()});
     recBlob=null;toast(t('saved'));await ldAC(S.uid);S.tab='cards';rTeacher()}catch(er){toast('Error','err');btn.disabled=false;btn.textContent='💾'}}
 
 // Teacher Categories
@@ -88,7 +89,7 @@ function showAddCat(){app.innerHTML=`<button class="back" onclick="S.tab='catego
   <div class="fld"><label class="lbl">${t('english')}</label><input class="inp" id="ncN"></div><div class="fld"><label class="lbl">${t('gurmukhi')}</label><input class="inp" id="ncG"></div>
   <button class="btn btn-p btn-w" onclick="addCat()">✅ ${t('create')}</button></div>`}
 async function addCat(){const n=$('ncN').value.trim(),g=$('ncG').value.trim();if(!n)return toast(t('fillAll'),'err');
-  await db.collection('categories').add({name:n,gurmukhi:g,emoji:'📚',teacherId:S.uid,createdAt:Date.now()});await ldCats(S.uid);toast(t('created'));S.tab='categories';rTeacher()}
+  await db.collection('categories').add({name:n,gurmukhi:g,emoji:'📚',teacherId:S.uid,orgId:S.orgId,createdAt:Date.now()});await ldCats(S.uid);toast(t('created'));S.tab='categories';rTeacher()}
 function editCat(cid){const c=S.cats.find(x=>x.id===cid);app.innerHTML=`<button class="back" onclick="S.tab='categories';rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">✏️ ${t('edit')}</div>
   <div class="fld"><label class="lbl">${t('english')}</label><input class="inp" id="ecN" value="${c.name}"></div><div class="fld"><label class="lbl">${t('gurmukhi')}</label><input class="inp" id="ecGN" value="${c.gurmukhi||''}"></div>
   <div class="flex gap-8"><button class="btn btn-p flex-1" onclick="svCat('${cid}')">${t('save')}</button><button class="btn btn-d flex-1" onclick="delCat('${cid}')">🗑</button></div></div>`}
@@ -114,40 +115,95 @@ function showAddStu(){const myCR=(S.tData?.classroomIds||[]);let crOpts=myCR.map
 async function addSt(){const n=$('sN').value.trim(),dob=$('sDob').value,ct=$('sCt').value.trim(),cr=$('sCR').value,u=$('sU').value.trim(),p=$('sP').value.trim();
   if(!n||!u||!p)return toast(t('fillAll'),'err');if(p.length<4)return toast('Min 4','err');
   if(!(await db.collection('students').where('username','==',u).get()).empty)return toast('Taken','err');
-  await db.collection('students').add({name:n,dob,contact:ct,classroomId:cr,username:u,password:p,teacherId:S.uid,createdAt:Date.now(),lastSeen:null,badges:[],xp:0,streak:0,lastPracticeDate:''});
+  await db.collection('students').add({name:n,dob,contact:ct,classroomId:cr,username:u,password:p,hasApp:true,teacherId:S.uid,orgId:S.orgId,createdAt:Date.now(),lastSeen:null,badges:[],xp:0,streak:0,lastPracticeDate:''});
   await ldStu(S.uid);toast(t('created'));rTeacher()}
 
 async function showSD(sid){app.innerHTML='<div class="loading"><div class="loader"></div></div>';
   const stu=S.students.find(x=>x.id===sid);const aS=await db.collection('activity').where('studentId','==',sid).get();
   const acts=aS.docs.map(d=>d.data());const qz=acts.filter(a=>a.type==='quiz_complete');
   const tSc=qz.reduce((s,q)=>s+(q.score||0),0),tQ=qz.reduce((s,q)=>s+(q.total||0),0);const acc=tQ?Math.round(tSc/tQ*100):0;
-  app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button>
+  // Check absence reports for today
+  const today=new Date().toISOString().split('T')[0];
+  let absToday=null;try{const abSnap=await db.collection('absenceReports').where('studentId','==',sid).where('date','==',today).get();
+    if(!abSnap.empty)absToday=abSnap.docs[0].data()}catch(e){}
+  // Load parent info
+  let parentData=null;
+  if(stu.parentId){try{const pd=await db.collection('parents').doc(stu.parentId).get();if(pd.exists)parentData={id:pd.id,...pd.data()}}catch(e){}}
+  let h=`<button class="back" onclick="rTeacher()">← ${t('back')}</button>
   <div style="text-align:center;margin-bottom:14px"><div class="avatar av-grn" style="width:56px;height:56px;font-size:24px;border-radius:18px;margin:0 auto">${(stu.name||'S')[0]}</div>
-  <div class="h2" style="margin-top:8px">${stu.name}</div><div class="sub">@${stu.username} · <span class="tag tag-pur">${getCR(stu.classroomId)}</span></div></div>
-  <div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">${qz.length}</div><div class="score-lbl">${t('quizzes')}</div></div>
+  <div class="h2" style="margin-top:8px">${stu.name}</div><div class="sub">${stu.username?'@'+stu.username+' · ':''}<span class="tag tag-pur">${getCR(stu.classroomId)}</span></div></div>`;
+  // Absence alert
+  if(absToday){h+=`<div class="panel" style="border:1.5px solid var(--warn);background:rgba(245,158,11,.06)"><div class="flex items-center gap-8"><span style="font-size:20px">⚠️</span><div><div class="h3" style="color:var(--warn)">Absence Reported Today</div><div class="sub2">Reason: ${absToday.reason||'—'} · ${absToday.note||''}</div><div class="sub2">Reported by: ${absToday.parentName||'Parent'} · ${fmt(absToday.timestamp)}</div></div></div></div>`}
+  h+=`<div class="score-bar"><div class="score-card"><div class="score-val" style="color:var(--saf)">${qz.length}</div><div class="score-lbl">${t('quizzes')}</div></div>
   <div class="score-card"><div class="score-val" style="color:var(--grn)">${acc}%</div><div class="score-lbl">${t('accuracy')}</div></div>
-  <div class="score-card"><div class="score-val" style="color:var(--warn)">🔥${stu.streak||0}</div><div class="score-lbl">${t('streak')}</div></div></div>
-  <div class="panel"><div class="flex gap-8"><button class="btn btn-p flex-1" onclick="openTC('${sid}','${esc(stu.name)}')">💬 ${t('messages')}</button></div>
+  <div class="score-card"><div class="score-val" style="color:var(--warn)">🔥${stu.streak||0}</div><div class="score-lbl">${t('streak')}</div></div></div>`;
+  // Parent info (read-only for teacher)
+  h+=`<div class="panel"><div class="panel-title">👪 Parent</div>`;
+  if(parentData){h+=`<div style="font-size:13px;line-height:2.2">👤 ${parentData.name||'—'}<br>📱 ${parentData.phone||'—'}${parentData.hasApp?' · <span class="tag tag-grn">App</span>':''}</div>
+  ${parentData.hasApp?'<button class="btn btn-p btn-w" style="margin-top:10px" onclick="openParentChat(\''+parentData.id+'\',\''+esc(parentData.name)+'\',\''+sid+'\')">💬 Message Parent</button>':''}`}
+  else{h+=`<p class="sub2">No parent linked — ask school admin to register parent</p>`}
+  h+='</div>';
+  h+=`<div class="panel"><div class="flex gap-8"><button class="btn btn-p flex-1" onclick="openTC('${sid}','${esc(stu.name)}')">💬 ${t('messages')}</button></div>
   <div class="flex gap-8 mt-14"><input class="inp" id="rpw" placeholder="${t('password')}"><button class="btn btn-s btn-sm" onclick="rstPw('${sid}')">${t('resetPassword')}</button></div>
-  <button class="btn btn-d btn-w" style="margin-top:10px" onclick="delSt('${sid}')">🗑 ${t('delete')}</button></div>`}
+  <button class="btn btn-d btn-w" style="margin-top:10px" onclick="delSt('${sid}')">🗑 ${t('delete')}</button></div>`;
+  app.innerHTML=h}
+
+// Teacher → Parent messaging (uses parent doc ID directly)
+async function openParentChat(parentId,pName,stuId){
+  app.innerHTML='<div class="loading"><div class="loader"></div></div>';
+  await markRd(S.uid,parentId);S.unread=await getUnrd(S.uid);const msgs=await getMsgs(S.uid,parentId);
+  const backTarget=stuId?`showSD('${stuId}')`:'rTeacher()';
+  let h=`<button class="back" onclick="${backTarget}">← ${t('back')}</button><div class="panel"><div class="panel-title">👪 ${pName}</div><div class="msg-list" id="mL">`;
+  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';
+  else msgs.forEach(m=>{const s=m.fromId===S.uid;h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'} ${s&&m.read?'msg-read':''}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}${m.tag&&m.tag!=='general'?'<span class="tag tag-org" style="margin-left:6px;font-size:9px">'+m.tag+'</span>':''}
+  <div class="msg-time">${fmt(m.timestamp)}${s?(m.read?' ✅':' ◻️'):''}</div></div>`});
+  h+=`</div><div class="msg-compose"><input class="inp" id="mI" placeholder="Message parent..." onkeydown="if(event.key==='Enter')sndPM('${parentId}','${esc(pName)}')"><button class="btn btn-p btn-sm" onclick="sndPM('${parentId}','${esc(pName)}')">${t('send')}</button></div></div>`;
+  app.innerHTML=h;const l=$('mL');if(l)l.scrollTop=l.scrollHeight}
+async function sndPM(parentId,pName){const x=$('mI').value.trim();if(!x)return;$('mI').value='';
+  await sendMsg(S.uid,S.uname,'teacher',parentId,pName,x);openParentChat(parentId,pName,'')}
 async function rstPw(sid){const p=$('rpw').value.trim();if(!p||p.length<4)return;await db.collection('students').doc(sid).update({password:p});toast(t('saved'))}
 async function delSt(sid){if(!confirm('?'))return;await db.collection('students').doc(sid).delete();await ldStu(S.uid);toast(t('deleted'));rTeacher()}
 
 // Teacher Messages
-function rTMsg(){let h=`<button class="back" onclick="S.tab='home';rTeacher()">← ${t('back')}</button><div class="topbar"><div class="h2">💬 ${t('messages')}</div></div>
+async function rTMsg(){
+  // Count unread per contact
+  const allUnrd=await db.collection('messages').where('toId','==',S.uid).where('read','==',false).get();
+  const unrdMap={};allUnrd.docs.forEach(d=>{const fid=d.data().fromId;unrdMap[fid]=(unrdMap[fid]||0)+1});
+  // Load parents for my students
+  const parentIds=[...new Set(S.students.map(s=>s.parentId).filter(Boolean))];
+  let myParents=[];
+  for(const pid of parentIds){try{const pd=await db.collection('parents').doc(pid).get();if(pd.exists&&pd.data().hasApp)myParents.push({id:pd.id,...pd.data()})}catch(e){}}
+  let h=`<button class="back" onclick="S.tab='home';rTeacher()">← ${t('back')}</button><div class="topbar"><div class="h2">💬 ${t('messages')}</div></div>
   <div class="help-tip"><span class="h-ico">💡</span><div>${t('helpMsg')}</div></div>
-  <div class="panel" style="cursor:pointer;background:linear-gradient(135deg,rgba(245,166,35,.1),rgba(139,92,246,.1));border:1px solid rgba(245,166,35,.2)" onclick="tBc()"><div class="flex items-center gap-12"><span style="font-size:24px">📢</span><div class="h3">${t('sendToAll')}</div></div></div>`;
-  S.students.forEach((s,i)=>{h+=`<div class="list-item clickable" onclick="openTC('${s.id}','${esc(s.name||s.username)}')"><div class="avatar ${avColor(i)}">${(s.name||'S')[0]}</div><div class="flex-1"><div class="h3">${s.name||s.username}</div></div></div>`});
+  <div class="dash-grid" style="margin-bottom:14px">
+    <div class="dash-card dc-green" onclick="tBc('students')"><div class="dc-icon">📢</div><div class="dc-title">All ${t('students')}</div></div>
+    <div class="dash-card dc-orange" onclick="tBc('parents')"><div class="dc-icon">👪</div><div class="dc-title">All ${t('parents')}</div></div></div>
+  <div class="sec-title">${t('students')}</div>`;
+  S.students.forEach((s,i)=>{const u=unrdMap[s.id]||0;h+=`<div class="list-item clickable" onclick="openTC('${s.id}','${esc(s.name||s.username)}')"><div class="avatar ${avColor(i)}">${(s.name||'S')[0]}</div><div class="flex-1"><div class="h3">${s.name||s.username}${u?'<span class="unread-badge">'+u+'</span>':''}</div></div></div>`});
+  if(myParents.length){h+=`<div class="sec-title" style="margin-top:14px">👪 ${t('parents')}</div>`;
+    myParents.forEach((p,i)=>{const kids=S.students.filter(s=>s.parentId===p.id).map(s=>s.name).join(', ');const u=unrdMap[p.id]||0;
+      h+=`<div class="list-item clickable" onclick="openParentChat('${p.id}','${esc(p.name)}','')"><div class="avatar av-org">${(p.name||'P')[0]}</div><div class="flex-1"><div class="h3">${p.name}${u?'<span class="unread-badge">'+u+'</span>':''}</div><div class="sub2">${kids}</div></div></div>`})}
+  window._myParents=myParents;
   app.innerHTML=h}
 async function openTC(sid,name){app.innerHTML='<div class="loading"><div class="loader"></div></div>';await markRd(S.uid,sid);S.unread=await getUnrd(S.uid);const msgs=await getMsgs(S.uid,sid);
   let h=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">💬 ${name}</div><div class="msg-list" id="mL">`;
-  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';else msgs.forEach(m=>{const s=m.fromId===S.uid;h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}<div class="msg-time">${fmt(m.timestamp)}</div></div>`});
+  if(!msgs.length)h+='<div class="empty"><p>'+t('noMessages')+'</p></div>';else msgs.forEach(m=>{const s=m.fromId===S.uid;h+=`<div class="msg-bub ${s?'msg-sent':'msg-recv'} ${s&&m.read?'msg-read':''}">${!s?'<div class="msg-name">'+m.fromName+'</div>':''}${m.text}<div class="msg-time">${fmt(m.timestamp)}${s?(m.read?' ✅':' ◻️'):''}</div></div>`});
   h+=`</div><div class="msg-compose"><input class="inp" id="mI" placeholder="..." onkeydown="if(event.key==='Enter')sndTM('${sid}','${esc(name)}')"><button class="btn btn-p btn-sm" onclick="sndTM('${sid}','${esc(name)}')">${t('send')}</button></div></div>`;
   app.innerHTML=h;const l=$('mL');if(l)l.scrollTop=l.scrollHeight}
 async function sndTM(sid,name){const x=$('mI').value.trim();if(!x)return;$('mI').value='';await sendMsg(S.uid,S.uname,'teacher',sid,name,x);openTC(sid,name)}
-async function tBc(){app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">📢</div>
-  <div class="fld"><textarea class="inp" id="bcM" rows="3"></textarea></div><button class="btn btn-p btn-w" id="bcB" onclick="sndTBc()">📢 ${t('send')}</button></div>`}
-async function sndTBc(){const x=$('bcM').value.trim();if(!x)return;$('bcB').disabled=true;for(const s of S.students)await sendMsg(S.uid,S.uname,'teacher',s.id,s.name,x);toast(t('sent'));rTeacher()}
+async function tBc(target){
+  const label=target==='parents'?'All Parents':'All Students';
+  app.innerHTML=`<button class="back" onclick="rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">📢 ${label}</div>
+  ${target==='parents'?'<div class="fld"><label class="lbl">Tag</label><select class="inp" id="bcTag"><option value="general">📋 General</option><option value="homework">📝 Homework</option><option value="event">🎉 Event</option><option value="urgent">🚨 Urgent</option></select></div>':''}
+  <div class="fld"><textarea class="inp" id="bcM" rows="3" placeholder="Type your message..."></textarea></div>
+  <button class="btn btn-p btn-w" id="bcB" onclick="sndTBc('${target}')">📢 ${t('send')}</button></div>`}
+async function sndTBc(target){const x=$('bcM').value.trim();if(!x)return;$('bcB').disabled=true;
+  const tag=$('bcTag')?.value||'general';
+  if(target==='parents'){const pw=window._myParents||[];
+    for(const p of pw)await sendMsg(S.uid,S.uname,'teacher',p.id,p.name,x,tag);
+    toast(`Sent to ${pw.length} parents ✅`)}
+  else{for(const s of S.students)await sendMsg(S.uid,S.uname,'teacher',s.id,s.name,x);toast(t('sent'))}
+  rTeacher()}
 
 // Teacher WoD
 function rTWod(){let h=`<button class="back" onclick="S.tab='home';rTeacher()">← ${t('back')}</button><div class="panel"><div class="panel-title">✨ ${t('wordOfDay')}</div>
@@ -160,7 +216,7 @@ async function ldWod(){const today=new Date().toISOString().split('T')[0];const 
   el.innerHTML=`<div class="wod-card"><div class="wod-lbl">Today</div>${w.imageUrl?'<img class="wod-img" src="'+w.imageUrl+'">':''}<div class="wod-gur">${w.gurmukhi}</div><div class="wod-eng">${w.english}</div></div>`}
 async function setWod(){const cid=$('wC').value;if(!cid)return;const card=S.cards.find(c=>c.id===cid);const today=new Date().toISOString().split('T')[0];
   const old=await db.collection('wordOfDay').where('teacherId','==',S.uid).where('date','==',today).get();if(!old.empty){const b=db.batch();old.docs.forEach(d=>b.delete(d.ref));await b.commit()}
-  await db.collection('wordOfDay').add({teacherId:S.uid,date:today,gurmukhi:card.gurmukhi,english:card.english,imageUrl:card.imageUrl||'',audioUrl:card.audioUrl||''});toast(t('saved'));rTWod()}
+  await db.collection('wordOfDay').add({teacherId:S.uid,orgId:S.orgId,date:today,gurmukhi:card.gurmukhi,english:card.english,imageUrl:card.imageUrl||'',audioUrl:card.audioUrl||''});toast(t('saved'));rTWod()}
 
 // Teacher Attendance
 let attDate=new Date().toISOString().split('T')[0],attMarks={};
@@ -173,12 +229,21 @@ function rTAtt(){app.innerHTML=`<button class="back" onclick="S.tab='home';rTeac
 async function loadTAtt(){const el=$('attBody');if(!el)return;
   const ex=await db.collection('attendance').where('teacherId','==',S.uid).where('date','==',attDate).get();
   if(!ex.empty){const d=ex.docs[0].data();attMarks={};(d.records||[]).forEach(r=>{attMarks[r.studentId]=r.status})}
-  else{attMarks={};S.students.forEach(s=>{attMarks[s.id]='unmarked'})}renderAttList()}
+  else{attMarks={};S.students.forEach(s=>{attMarks[s.id]='unmarked'})}
+  // Load absence reports from parents for this date
+  let absReports={};try{const abSnap=await db.collection('absenceReports').where('teacherId','==',S.uid).where('date','==',attDate).get();
+    abSnap.docs.forEach(d=>{const r=d.data();absReports[r.studentId]=r})}catch(e){}
+  renderAttList(absReports)}
 
-function renderAttList(){const el=$('attBody');if(!el)return;
-  let h=`<div class="flex gap-8 mb-14"><button class="btn btn-g flex-1" onclick="markAll('present')">✅ All Present</button><button class="btn btn-d flex-1" onclick="markAll('absent')">❌ All Absent</button></div>`;
-  S.students.forEach(s=>{const st=attMarks[s.id]||'unmarked';
-    h+=`<div class="att-row"><div class="att-name">${s.name}<div class="sub2"><span class="tag tag-pur">${getCR(s.classroomId)}</span></div></div>
+function renderAttList(absReports){const el=$('attBody');if(!el)return;absReports=absReports||{};
+  // Show parent absence reports at top
+  const absKeys=Object.keys(absReports);
+  let h='';
+  if(absKeys.length){h+=`<div class="panel" style="border:1.5px solid var(--warn);background:rgba(245,158,11,.04);margin-bottom:12px"><div class="panel-title" style="color:var(--warn)">👪 Parent Absence Reports</div>`;
+    absKeys.forEach(sid=>{const r=absReports[sid];h+=`<div style="padding:6px 0;border-bottom:1px solid var(--brd);font-size:13px">⚠️ <b>${r.studentName}</b> — ${r.reason||'—'} ${r.note?'· '+r.note:''} <span class="sub2">by ${r.parentName||'Parent'}</span></div>`});h+='</div>'}
+  h+=`<div class="flex gap-8 mb-14"><button class="btn btn-g flex-1" onclick="markAll('present')">✅ All Present</button><button class="btn btn-d flex-1" onclick="markAll('absent')">❌ All Absent</button></div>`;
+  S.students.forEach(s=>{const st=attMarks[s.id]||'unmarked';const hasReport=absReports[s.id];
+    h+=`<div class="att-row${hasReport?' att-reported':''}"><div class="att-name">${s.name}${hasReport?'<span class="tag tag-org" style="margin-left:6px;font-size:9px">Reported</span>':''}<div class="sub2"><span class="tag tag-pur">${getCR(s.classroomId)}</span></div></div>
     <button class="att-btn ${st==='present'?'present':st==='absent'?'absent':'unmarked'}" onclick="toggleAtt('${s.id}')">${st==='present'?'✅':st==='absent'?'❌':'—'}</button></div>`});
   const pC=Object.values(attMarks).filter(v=>v==='present').length,aC=Object.values(attMarks).filter(v=>v==='absent').length;
   h+=`<div class="score-bar mt-14"><div class="score-card"><div class="score-val" style="color:var(--grn)">${pC}</div><div class="score-lbl">Present</div></div>
@@ -192,7 +257,7 @@ function markAll(st){S.students.forEach(s=>{attMarks[s.id]=st});renderAttList()}
 async function saveAtt(){const records=S.students.map(s=>({studentId:s.id,studentName:s.name,status:attMarks[s.id]||'unmarked'}));const remark=$('attRemark')?.value?.trim()||'';
   const ex=await db.collection('attendance').where('teacherId','==',S.uid).where('date','==',attDate).get();
   if(!ex.empty){const b=db.batch();ex.docs.forEach(d=>b.delete(d.ref));await b.commit()}
-  const now=new Date();await db.collection('attendance').add({teacherId:S.uid,teacherName:S.uname,signedBy:S.uname,signedAt:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+  const now=new Date();await db.collection('attendance').add({teacherId:S.uid,teacherName:S.uname,signedBy:S.uname,signedAt:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),orgId:S.orgId,
     date:attDate,remark,classroomIds:S.tData?.classroomIds||[],records,presentCount:records.filter(r=>r.status==='present').length,absentCount:records.filter(r=>r.status==='absent').length,totalCount:records.length,timestamp:Date.now()});
   toast(t('saved'));confetti()}
 
@@ -217,11 +282,23 @@ async function ldQGC(){const s=await db.collection('cards').where('categoryId','
   $('qgCL').innerHTML=h}
 async function svQG(){const n=$('qgN').value.trim(),ids=[...document.querySelectorAll('.qx:checked')].map(c=>c.value);
   if(ids.length!==4||!n)return toast('4 cards + name','err');
-  await db.collection('quizGroups').add({name:n,categoryId:$('qgC').value,cardIds:ids,teacherId:S.uid,createdAt:Date.now()});toast(t('created'));rTQuiz()}
+  await db.collection('quizGroups').add({name:n,categoryId:$('qgC').value,cardIds:ids,teacherId:S.uid,orgId:S.orgId,createdAt:Date.now()});toast(t('created'));rTQuiz()}
 
 // Teacher Profile
-function rTProfile(){app.innerHTML=`<div class="topbar"><div class="h2">👤 ${t('profile')}</div></div>
+function rTProfile(){
+  const typeBadge=S.tData?.type==='vikar'?'<span class="tag tag-org">Vikar</span>':'<span class="tag tag-grn">Permanent</span>';
+  let crBoxes=S.classrooms.map(c=>{const checked=(S.tData?.classroomIds||[]).includes(c.id)?'checked':'';
+    return`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px"><input type="checkbox" class="tpCrCb" value="${c.id}" ${checked}> ${c.name}</label>`}).join('');
+  app.innerHTML=`<div class="topbar"><div class="h2">👤 ${t('profile')}</div></div>
   <div style="text-align:center;margin-bottom:16px"><div class="avatar av-blu" style="width:64px;height:64px;font-size:28px;border-radius:20px;margin:0 auto">${(S.uname||'T')[0]}</div>
-  <div class="h2" style="margin-top:10px">${S.uname}</div><div class="sub">${(S.tData?.classroomIds||[]).map(id=>getCR(id)).join(', ')||''}</div></div>
+  <div class="h2" style="margin-top:10px">${S.uname} ${typeBadge}</div><div class="sub">${(S.tData?.classroomIds||[]).map(id=>getCR(id)).join(', ')||'No classroom'}</div></div>
   <div class="panel"><div style="font-size:13px;line-height:2.2">📱 ${S.tData?.phone||'—'}<br>📧 ${S.tData?.email||'—'}<br>🎂 ${fmtDob(S.tData?.dob)}</div></div>
+  <div class="panel"><div class="panel-title">🏫 My ${t('classrooms')}</div>
+  <div class="help-tip"><span class="h-ico">💡</span><div>Select which classrooms you teach. Useful when changing classes for a new year.</div></div>
+  ${crBoxes||'<p class="sub2">No classrooms created yet</p>'}
+  <button class="btn btn-p btn-w" style="margin-top:10px" onclick="svTCR()">💾 Update ${t('classrooms')}</button></div>
   <button class="btn btn-d btn-w" onclick="doLogout()">🚪 ${t('logout')}</button>`}
+
+async function svTCR(){const ids=[...document.querySelectorAll('.tpCrCb:checked')].map(c=>c.value);
+  await db.collection('teachers').doc(S.uid).update({classroomIds:ids});
+  S.tData.classroomIds=ids;toast(t('saved'));rTProfile()}
